@@ -1,4 +1,4 @@
-package com.example.mrolnik.classes
+package com.example.mrolnik.model
 
 class User {
     var userId: Int = 0
