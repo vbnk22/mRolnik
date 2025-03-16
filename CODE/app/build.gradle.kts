@@ -1,7 +1,10 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -40,6 +43,32 @@ android {
 }
 
 dependencies {
+    //ORM
+    val room_version = "2.6.1"
+    val ktor_version = "3.1.0"
+
+    implementation("androidx.room:room-runtime:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
+
+    //API comunnciation
+    implementation ("io.ktor:ktor-client-android:$ktor_version")
+    implementation ("io.ktor:ktor-client-json:$ktor_version")
+    implementation ("io.ktor:ktor-client-serialization:$ktor_version")
+    implementation ("io.ktor:ktor-client-core:$ktor_version")
+    implementation ("io.ktor:ktor-client-json:$ktor_version")
+    implementation ("io.ktor:ktor-client-serialization:$ktor_version")
+    implementation ("io.ktor:ktor-client-logging:$ktor_version")
+    implementation ("io.ktor:ktor-client-content-negotiation-jvm:$ktor_version")
+
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.1.2"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
+    implementation("io.ktor:ktor-client-android:$ktor_version")
+    implementation("io.github.jan-tennert.supabase:serializer-jackson:1.0.0")
+
+    implementation("io.github.cdimascio:dotenv-kotlin:6.2.2")
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
