@@ -108,7 +108,7 @@ fun RegisterScreen(navController: NavController) {
                     try {
                         // INSERT do tabeli user2
                         supabaseClient
-                            .postgrest["user2"]
+                            .postgrest["user"]
                             .insert(
                                 mapOf(
                                     "firstName" to imie.value,

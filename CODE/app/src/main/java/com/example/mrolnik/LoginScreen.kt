@@ -62,7 +62,7 @@ fun LoginScreen(navController: NavController) {
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         val result = supabaseClient
-                            .postgrest["user2"] //ZMIENIĆ NAZWE KLASY NA PRAWIDLOWA USER2 TO MOJA TESTOWA
+                            .postgrest["user"] //ZMIENIĆ NAZWE KLASY NA PRAWIDLOWA USER2 TO MOJA TESTOWA
                             .select {
                                 filter {
                                     eq("login", login.value)
