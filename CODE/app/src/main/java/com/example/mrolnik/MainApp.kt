@@ -13,7 +13,7 @@ fun MainApp() {
     NavHost(navController = navController, startDestination = "main") {
         composable("main") { MainScreen(navController) }
         composable("login") { LoginScreen(navController) }
-        composable("register") { RegisterScreen() }
+        composable("register") { RegisterScreen(navController) }
         composable("home") { HomeScreen() }
     }
 }
