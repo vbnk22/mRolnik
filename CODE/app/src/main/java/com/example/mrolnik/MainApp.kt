@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mrolnik.screen.HomeScreen
 import com.example.mrolnik.screen.LoginScreen
+import com.example.mrolnik.screen.MainScreen
 import com.example.mrolnik.screen.RegisterScreen
 
 @Composable
