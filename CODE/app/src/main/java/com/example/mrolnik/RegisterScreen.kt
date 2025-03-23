@@ -13,8 +13,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import io.github.jan.supabase.postgrest.postgrest
@@ -33,7 +34,10 @@ fun RegisterScreen(navController: NavController) {
     val login = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     val confirmPassword = remember { mutableStateOf("") }
+
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -85,28 +89,91 @@ fun RegisterScreen(navController: NavController) {
             )
 
             Button(onClick = {
-                if (email.value.isBlank() || login.value.isBlank() || password.value.isBlank() || confirmPassword.value.isBlank()) {
-                    // Walidacja pustych pól
-                    navController.navigate("main")
+                keyboardController?.hide()
+
+                if (email.value.isBlank() || login.value.isBlank() || password.value.isBlank() || confirmPassword.value.isBlank() || imie.value.isBlank() || nazwisko.value.isBlank()) {
+                    imie.value = ""
+                    nazwisko.value = ""
+                    login.value = ""
+                    password.value = ""
+                    confirmPassword.value = ""
+                    email.value = ""
+                    focusManager.clearFocus()
+                    CoroutineScope(Dispatchers.Main).launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Wszystkie pola muszą być uzupełnione",
+                            duration = androidx.compose.material3.SnackbarDuration.Short
+                        )
+                    }
                     return@Button
                 }
+
+                val digitsOrSpecials = Regex(".*[\\d\\W].*")
+                if (digitsOrSpecials.containsMatchIn(imie.value) || digitsOrSpecials.containsMatchIn(nazwisko.value)) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        imie.value = ""
+                        nazwisko.value = ""
+                        login.value = ""
+                        password.value = ""
+                        confirmPassword.value = ""
+                        email.value = ""
+                        focusManager.clearFocus()
+                        snackbarHostState.showSnackbar(
+                            message = "Imię lub nazwisko nie mogą zawierać cyfr lub znaków spejcalnuch",
+                            duration = androidx.compose.material3.SnackbarDuration.Short
+                        )
+                    }
+                    return@Button
+                }
+
+
+                val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}\$")
+                if (!emailRegex.matches(email.value)) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        imie.value = ""
+                        nazwisko.value = ""
+                        login.value = ""
+                        password.value = ""
+                        confirmPassword.value = ""
+                        email.value = ""
+                        focusManager.clearFocus()
+                        snackbarHostState.showSnackbar(
+                            message = "Niepoprawny format e-maila",
+                            duration = androidx.compose.material3.SnackbarDuration.Short
+                        )
+                    }
+                    return@Button
+                }
+
+                if (login.value.equals(password.value)) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        login.value = ""
+                        password.value = ""
+                        confirmPassword.value = ""
+                        snackbarHostState.showSnackbar(
+                            message = "Login i hasło nie mogą być takie same",
+                            duration = androidx.compose.material3.SnackbarDuration.Short
+                        )
+                    }
+                    return@Button
+                }
+
+
                 if (password.value != confirmPassword.value) {
+                    password.value = ""
+                    confirmPassword.value = ""
                     CoroutineScope(Dispatchers.Main).launch {
                         snackbarHostState.showSnackbar(
                             message = "Hasła nie są identyczne",
                             duration = androidx.compose.material3.SnackbarDuration.Short
                         )
-
                     }
-
                     return@Button
                 }
 
                 val supabaseClient = com.example.mrolnik.config.SupabaseClient().getSupabaseClient()
-
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        // INSERT do tabeli user2
                         supabaseClient
                             .postgrest["user"]
                             .insert(
@@ -133,5 +200,9 @@ fun RegisterScreen(navController: NavController) {
                 Text("Zarejestruj się")
             }
         }
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
