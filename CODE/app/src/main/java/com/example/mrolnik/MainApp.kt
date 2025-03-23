@@ -5,6 +5,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mrolnik.screen.HomeScreen
+import com.example.mrolnik.screen.LoginScreen
+import com.example.mrolnik.screen.RegisterScreen
 
 @Composable
 @Preview
