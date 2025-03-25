@@ -172,10 +172,13 @@ fun RegisterScreen(navController: NavController) {
                 }
                 CoroutineScope(Dispatchers.IO).launch {
                     if (userService.registerUser(imie, nazwisko, login, password, email)) {
-                        snackbarHostState.showSnackbar(
-                            message = "Rejestracja zakończona sukcesem",
-                            duration = androidx.compose.material3.SnackbarDuration.Short
-                        )
+                        CoroutineScope(Dispatchers.Main).launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Rejestracja zakończona sukcesem",
+                                duration = androidx.compose.material3.SnackbarDuration.Short
+                            )
+                            navController.navigate("login")
+                        }
                     } else {
                         snackbarHostState.showSnackbar(
                             message = "Błąd podczas rejestracji",

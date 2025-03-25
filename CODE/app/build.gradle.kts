@@ -43,6 +43,9 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
     //ORM
     val room_version = "2.6.1"
     val ktor_version = "3.1.0"
@@ -87,5 +90,19 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Jetpack Fragment
+    implementation("androidx.fragment:fragment-ktx:1.5.5")  // Możesz użyć najnowszej wersji
+
+    // Jetpack Compose
+    implementation("androidx.compose.ui:ui:1.4.0")  // Zależność Compose
+    implementation("androidx.compose.material3:material3:1.0.0") // Dla Material3 w Compose
+    implementation("androidx.compose.ui:ui-tooling-preview:1.4.0")
+
+    // Compose View (jeśli chcesz osadzać Compose w Fragmentach)
+    implementation("androidx.compose.ui:ui-tooling:1.4.0")
+
+    // Jetpack Compose Navigation (jeśli planujesz nawigację w Compose)
+    implementation("androidx.navigation:navigation-compose:2.5.0")
 
 }
