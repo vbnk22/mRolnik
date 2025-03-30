@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.storage)
     //ORM
     val room_version = "2.6.1"
     val ktor_version = "3.1.0"
