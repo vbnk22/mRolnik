@@ -7,13 +7,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.mrolnik.model.Orchard
+import com.example.mrolnik.service.OrchardService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun OrchardManagementScreen() {
-    var orchards by remember { mutableStateOf(listOf<String>()) }
     var selectedOrchard by remember { mutableStateOf<String?>(null) }
     var orchardName by remember { mutableStateOf("") }
     var orchardFruitTrees by remember { mutableStateOf(mapOf<String, List<String>>()) }
+    var orchard: Orchard
+    var orchardService = OrchardService()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         if (selectedOrchard == null) {
@@ -25,10 +31,14 @@ fun OrchardManagementScreen() {
             )
             Button(
                 onClick = {
-                    if (orchardName.isNotBlank()) {
-                        orchards = orchards + orchardName
-                        orchardFruitTrees = orchardFruitTrees + (orchardName to listOf())
-                        orchardName = ""
+                    CoroutineScope(Dispatchers.IO).launch {
+                        if (orchardName.isNotBlank()) {
+                            orchard = Orchard(orchardName)
+                            orchardService.addOrchard(orchard)
+                            orchardService.addOrchardIdToAssociationTable()
+                            orchardFruitTrees = orchardFruitTrees + (orchardName to listOf())
+                            orchardName = ""
+                        }
                     }
                 },
                 modifier = Modifier.padding(top = 8.dp)
@@ -39,15 +49,15 @@ fun OrchardManagementScreen() {
             Spacer(modifier = Modifier.height(16.dp))
             Text("List of Orchards:", style = MaterialTheme.typography.headlineSmall)
             Column {
-                orchards.forEach { orchard ->
-                    Text(
-                        text = orchard,
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(8.dp)
-                            .clickable { selectedOrchard = orchard },
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+//                orchards.forEach { orchard ->
+//                    Text(
+//                        text = orchard,
+//                        modifier = Modifier.fillMaxWidth()
+//                            .padding(8.dp)
+//                            .clickable { selectedOrchard = orchard },
+//                        style = MaterialTheme.typography.bodyLarge
+//                    )
+//                }
             }
         } else {
             OrchardDetailScreen(

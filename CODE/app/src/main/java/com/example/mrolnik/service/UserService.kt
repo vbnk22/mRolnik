@@ -9,6 +9,13 @@ import io.github.jan.supabase.postgrest.from
 class UserService {
     val supabase = SupabaseClient().getSupabaseClient()
 
+    companion object {
+        private var user: User = User()
+            fun getLoggedUserId(): Int {
+                return user.userId
+            }
+    }
+
     suspend fun loginUser(login: MutableState<String>, password: MutableState<String>): User? {
        try {
             val result: List<User> = supabase
@@ -20,9 +27,12 @@ class UserService {
                     }
                 }
                 .decodeList<User>()
-            if (!result.isNullOrEmpty()) return result[0]
+            if (!result.isNullOrEmpty()) {
+                user = result[0]
+                return user
+            }
         } catch (e: Exception) {
-            Log.e("UserService", "Login error")
+            Log.e("UserService", "Login error: ${e.message}")
             return null
         }
         return null
