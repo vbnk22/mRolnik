@@ -7,13 +7,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.mrolnik.model.Field
+import com.example.mrolnik.service.FieldService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun FieldManagementScreen() {
-    var fields by remember { mutableStateOf(listOf<String>()) }
     var selectedField by remember { mutableStateOf<String?>(null) }
     var fieldName by remember { mutableStateOf("") }
     var fieldCultivations by remember { mutableStateOf(mapOf<String, List<String>>()) }
+    var field: Field
+    var fieldService = FieldService()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         if (selectedField == null) {
@@ -25,10 +31,14 @@ fun FieldManagementScreen() {
             )
             Button(
                 onClick = {
-                    if (fieldName.isNotBlank()) {
-                        fields = fields + fieldName
-                        fieldCultivations = fieldCultivations + (fieldName to listOf())
-                        fieldName = ""
+                    CoroutineScope(Dispatchers.IO).launch {
+                        if (fieldName.isNotBlank()) {
+                            field = Field(fieldName)
+                            fieldService.addField(field)
+                            fieldService.addFieldIdToAssociationTable()
+                            fieldCultivations = fieldCultivations + (fieldName to listOf())
+                            fieldName = ""
+                        }
                     }
                 },
                 modifier = Modifier.padding(top = 8.dp)
@@ -39,15 +49,15 @@ fun FieldManagementScreen() {
             Spacer(modifier = Modifier.height(16.dp))
             Text("List of Fields:", style = MaterialTheme.typography.headlineSmall)
             Column {
-                fields.forEach { field ->
-                    Text(
-                        text = field,
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(8.dp)
-                            .clickable { selectedField = field },
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+//                fields.forEach { field ->
+//                    Text(
+//                        text = field,
+//                        modifier = Modifier.fillMaxWidth()
+//                            .padding(8.dp)
+//                            .clickable { selectedField = field },
+//                        style = MaterialTheme.typography.bodyLarge
+//                    )
+//                }
             }
         } else {
             FieldDetailScreen(
