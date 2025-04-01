@@ -19,7 +19,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun VehicleManagementScreen(navController: NavController) {
-    //var vehicles by remember { mutableStateOf(listOf(Vehicle("Tractor", "Dobry"), Vehicle("Harvester", "Do naprawy"), Vehicle("Truck", "Zalecana kontrola"))) }
     var showForm by remember { mutableStateOf(false) }
     var newVehicle by remember { mutableStateOf("") }
     var newVehicleCondition by remember { mutableStateOf("") }

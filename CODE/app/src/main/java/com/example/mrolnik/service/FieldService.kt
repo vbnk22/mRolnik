@@ -36,7 +36,7 @@ class FieldService {
                 )
             )
         } catch (e: Exception) {
-            Log.e("VehicleService", "Adding vehicle to database error: ${e.message}")
+            Log.e("FieldService", "Adding fieldId to association table error: ${e.message}")
         }
     }
 }
