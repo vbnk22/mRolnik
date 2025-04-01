@@ -18,14 +18,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
+import com.example.mrolnik.service.WarehouseService
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.mrolnik.model.Animal
+import com.example.mrolnik.model.Warehouse
+import com.example.mrolnik.service.AnimalService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun WarehouseManagementScreen() {
+    var showForm by remember { mutableStateOf(false) }
     var warehouses by remember { mutableStateOf(listOf<String>()) }
     var selectedWarehouse by remember { mutableStateOf<String?>(null) }
     var warehouseName by remember { mutableStateOf("") }
     var warehouseResources by remember { mutableStateOf(mapOf<String, List<String>>()) }
+
+    var newWarehouse by remember { mutableStateOf("") }
+    var warehouse: Warehouse
+    var warehouseService = WarehouseService()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         if (selectedWarehouse == null) {
@@ -37,10 +49,14 @@ fun WarehouseManagementScreen() {
             )
             Button(
                 onClick = {
-                    if (warehouseName.isNotBlank()) {
-                        warehouses = warehouses + warehouseName
-                        warehouseResources = warehouseResources + (warehouseName to listOf())
-                        warehouseName = ""
+                    CoroutineScope(Dispatchers.IO).launch {
+                        if (warehouseName.isNotBlank()) {
+                            warehouse = Warehouse(warehouseName)
+                            warehouseService.addWarehouse(warehouse)
+                            warehouseService.addWarehouseIdToAssociationTable()
+                            newWarehouse = ""
+                            showForm = false
+                        }
                     }
                 },
                 modifier = Modifier.padding(top = 8.dp)
@@ -50,110 +66,110 @@ fun WarehouseManagementScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
             Text("List of Warehouses:", style = MaterialTheme.typography.headlineSmall)
-            Column {
-                warehouses.forEach { warehouse ->
-                    Text(
-                        text = warehouse,
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(8.dp)
-                            .clickable { selectedWarehouse = warehouse },
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        } else {
-            WarehouseDetailScreen(
-                warehouseName = selectedWarehouse!!,
-                resources = warehouseResources[selectedWarehouse] ?: listOf(),
-                onAddResource = { resource ->
-                    warehouseResources = warehouseResources.toMutableMap().apply {
-                        this[selectedWarehouse!!] = (this[selectedWarehouse] ?: listOf()) + resource
-                    }
-                },
-                onBack = { selectedWarehouse = null }
-            )
+//            Column {
+//                warehouses.forEach { warehouse ->
+//                    Text(
+//                        text = warehouse,
+//                        modifier = Modifier.fillMaxWidth()
+//                            .padding(8.dp)
+//                            .clickable { selectedWarehouse = warehouse },
+//                        style = MaterialTheme.typography.bodyLarge
+//                    )
+//                }
+//            }
+//        } else {
+//            WarehouseDetailScreen(
+//                warehouseName = selectedWarehouse!!,
+//                resources = warehouseResources[selectedWarehouse] ?: listOf(),
+//                onAddResource = { resource ->
+//                    warehouseResources = warehouseResources.toMutableMap().apply {
+//                        this[selectedWarehouse!!] = (this[selectedWarehouse] ?: listOf()) + resource
+//                    }
+//                },
+//                onBack = { selectedWarehouse = null }
+//            )
+//        }
         }
-    }
-}
-
-@Composable
-fun WarehouseDetailScreen(warehouseName: String, resources: List<String>, onAddResource: (String) -> Unit, onBack: () -> Unit) {
-    var showResourceForm by remember { mutableStateOf(false) }
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Warehouse: $warehouseName", style = MaterialTheme.typography.headlineSmall)
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Resources in this warehouse:", style = MaterialTheme.typography.bodyLarge)
-        Column {
-            resources.forEach { resource ->
-                Text(text = resource, modifier = Modifier.padding(4.dp))
-            }
-        }
-
-        Button(
-            onClick = { showResourceForm = !showResourceForm },
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            Text(if (showResourceForm) "Hide Resource Form" else "Add Resource")
-        }
-
-        if (showResourceForm) {
-            ResourceForm(onAddResource)
-        }
-
-        Button(
-            onClick = onBack,
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            Text("Back to Warehouses")
-        }
-    }
-}
-
-@Composable
-fun ResourceForm(onAddResource: (String) -> Unit) {
-    var resourceName by remember { mutableStateOf("") }
-    var quantity by remember { mutableStateOf("") }
-    var unitMeasure by remember { mutableStateOf("") }
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        OutlinedTextField(
-            value = resourceName,
-            onValueChange = { resourceName = it },
-            label = { Text("Resource Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = quantity,
-            onValueChange = { quantity = it },
-            label = { Text("Quantity") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = unitMeasure,
-            onValueChange = { unitMeasure = it },
-            label = { Text("Unit Measure") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Button(
-            onClick = {
-                if (resourceName.isNotBlank() && quantity.isNotBlank() && unitMeasure.isNotBlank()) {
-                    onAddResource("$resourceName - $quantity $unitMeasure")
-                    resourceName = ""
-                    quantity = ""
-                    unitMeasure = ""
-                }
-            },
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            Text("Save Resource")
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewForms() {
-    WarehouseManagementScreen()
-}
+    }}
+//
+//@Composable
+//fun WarehouseDetailScreen(warehouseName: String, resources: List<String>, onAddResource: (String) -> Unit, onBack: () -> Unit) {
+//    var showResourceForm by remember { mutableStateOf(false) }
+//
+//    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+//        Text("Warehouse: $warehouseName", style = MaterialTheme.typography.headlineSmall)
+//
+//        Spacer(modifier = Modifier.height(16.dp))
+//        Text("Resources in this warehouse:", style = MaterialTheme.typography.bodyLarge)
+//        Column {
+//            resources.forEach { resource ->
+//                Text(text = resource, modifier = Modifier.padding(4.dp))
+//            }
+//        }
+//
+//        Button(
+//            onClick = { showResourceForm = !showResourceForm },
+//            modifier = Modifier.padding(top = 8.dp)
+//        ) {
+//            Text(if (showResourceForm) "Hide Resource Form" else "Add Resource")
+//        }
+//
+//        if (showResourceForm) {
+//            ResourceForm(onAddResource)
+//        }
+//
+//        Button(
+//            onClick = onBack,
+//            modifier = Modifier.padding(top = 8.dp)
+//        ) {
+//            Text("Back to Warehouses")
+//        }
+//    }
+//}
+//
+//@Composable
+//fun ResourceForm(onAddResource: (String) -> Unit) {
+//    var resourceName by remember { mutableStateOf("") }
+//    var quantity by remember { mutableStateOf("") }
+//    var unitMeasure by remember { mutableStateOf("") }
+//
+//    Column(modifier = Modifier.padding(16.dp)) {
+//        OutlinedTextField(
+//            value = resourceName,
+//            onValueChange = { resourceName = it },
+//            label = { Text("Resource Name") },
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        OutlinedTextField(
+//            value = quantity,
+//            onValueChange = { quantity = it },
+//            label = { Text("Quantity") },
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        OutlinedTextField(
+//            value = unitMeasure,
+//            onValueChange = { unitMeasure = it },
+//            label = { Text("Unit Measure") },
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        Button(
+//            onClick = {
+//                if (resourceName.isNotBlank() && quantity.isNotBlank() && unitMeasure.isNotBlank()) {
+//                    onAddResource("$resourceName - $quantity $unitMeasure")
+//                    resourceName = ""
+//                    quantity = ""
+//                    unitMeasure = ""
+//                }
+//            },
+//            modifier = Modifier.padding(top = 8.dp)
+//        ) {
+//            Text("Save Resource")
+//        }
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewForms() {
+//    WarehouseManagementScreen()
+//}

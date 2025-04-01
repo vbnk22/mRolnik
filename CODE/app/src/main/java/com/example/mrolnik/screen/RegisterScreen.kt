@@ -126,6 +126,20 @@ fun RegisterScreen(navController: NavController) {
                     return@Button
                 }
 
+                val passwordRegex = Regex("^(?=.*[A-Z])(?=.*[@#$%^&+=!]).{6,}$")
+                if (!passwordRegex.matches(password.value)) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        password.value = ""
+                        confirmPassword.value = ""
+                        snackbarHostState.showSnackbar(
+                            message = "Hasło musi mieć min. 6 znaków, 1 dużą literę i 1 znak specjalny",
+                            duration = androidx.compose.material3.SnackbarDuration.Short
+                        )
+                    }
+                    return@Button
+                }
+
+
 
                 val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}\$")
                 if (!emailRegex.matches(email.value)) {
