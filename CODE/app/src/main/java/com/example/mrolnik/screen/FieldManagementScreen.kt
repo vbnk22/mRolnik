@@ -2,16 +2,21 @@ package com.example.mrolnik.screen
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.mrolnik.model.Animal
 import com.example.mrolnik.model.Field
 import com.example.mrolnik.service.FieldService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun FieldManagementScreen() {
@@ -20,6 +25,7 @@ fun FieldManagementScreen() {
     var fieldCultivations by remember { mutableStateOf(mapOf<String, List<String>>()) }
     var field: Field
     var fieldService = FieldService()
+    var fields by remember { mutableStateOf(emptyList<Field>()) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         if (selectedField == null) {
@@ -48,16 +54,30 @@ fun FieldManagementScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
             Text("List of Fields:", style = MaterialTheme.typography.headlineSmall)
-            Column {
-//                fields.forEach { field ->
-//                    Text(
-//                        text = field,
-//                        modifier = Modifier.fillMaxWidth()
-//                            .padding(8.dp)
-//                            .clickable { selectedField = field },
-//                        style = MaterialTheme.typography.bodyLarge
-//                    )
-//                }
+            LaunchedEffect(Unit) {
+                val fetchedFields = withContext(Dispatchers.IO) {
+                    fieldService.getAllByUserId()
+                }
+                fields = fetchedFields
+            }
+            LazyColumn {
+                if (fields.isNotEmpty()) {
+                    items(fields) { field ->
+                        Text(
+                            text = field.fieldName,
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                } else {
+                    items(fields) { field ->
+                        Text(
+                            text = "Brak pól",
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
             }
         } else {
             FieldDetailScreen(

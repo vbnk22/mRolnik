@@ -1,7 +1,5 @@
 package com.example.mrolnik.screen
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -9,31 +7,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
-import com.example.mrolnik.service.WarehouseService
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.mrolnik.model.Animal
+import com.example.mrolnik.service.WarehouseService
 import com.example.mrolnik.model.Warehouse
-import com.example.mrolnik.service.AnimalService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun WarehouseManagementScreen() {
     var showForm by remember { mutableStateOf(false) }
-    var warehouses by remember { mutableStateOf(listOf<String>()) }
     var selectedWarehouse by remember { mutableStateOf<String?>(null) }
     var warehouseName by remember { mutableStateOf("") }
     var warehouseResources by remember { mutableStateOf(mapOf<String, List<String>>()) }
+    var warehouses by remember { mutableStateOf(emptyList<Warehouse>()) }
 
     var newWarehouse by remember { mutableStateOf("") }
     var warehouse: Warehouse
@@ -66,17 +64,31 @@ fun WarehouseManagementScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
             Text("List of Warehouses:", style = MaterialTheme.typography.headlineSmall)
-//            Column {
-//                warehouses.forEach { warehouse ->
-//                    Text(
-//                        text = warehouse,
-//                        modifier = Modifier.fillMaxWidth()
-//                            .padding(8.dp)
-//                            .clickable { selectedWarehouse = warehouse },
-//                        style = MaterialTheme.typography.bodyLarge
-//                    )
-//                }
-//            }
+            LaunchedEffect(Unit) {
+                val fetchedWarehouses = withContext(Dispatchers.IO) {
+                    warehouseService.getAllByUserId()
+                }
+                warehouses = fetchedWarehouses
+            }
+            LazyColumn {
+                if (warehouses.isNotEmpty()) {
+                    items(warehouses) { warehouse ->
+                        Text(
+                            text = warehouse.warehouseName,
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                } else {
+                    items(warehouses) { warehouse ->
+                        Text(
+                            text = "Brak magazynów",
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
 //        } else {
 //            WarehouseDetailScreen(
 //                warehouseName = selectedWarehouse!!,
