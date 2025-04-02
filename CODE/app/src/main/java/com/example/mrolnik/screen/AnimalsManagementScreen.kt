@@ -20,11 +20,10 @@ fun AnimalsManagementScreen(navController: NavController) {
     var showForm by remember { mutableStateOf(false) }
     var newAnimal by remember { mutableStateOf("") }
     var newAnimalCount by remember { mutableStateOf("") }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     var animal: Animal
     var animalService = AnimalService()
-
-
-
+    var animals by remember { mutableStateOf(emptyList<Animal>()) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Button(onClick = { showForm = true }) {
@@ -65,16 +64,31 @@ fun AnimalsManagementScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
         Text("Animal List:", style = MaterialTheme.typography.headlineSmall)
+        LaunchedEffect(Unit) {
+            val fetchedAnimals = withContext(Dispatchers.IO) {
+                animalService.getAllByUserId()
+            }
+            animals = fetchedAnimals
+        }
         LazyColumn {
-//            items(animals) { animal ->
-////                Text(
-//                    text = "${animal.name} - ${animal.count} pcs",
-//                    modifier = Modifier.fillMaxWidth().padding(8.dp),
-//                    style = MaterialTheme.typography.bodyLarge
-//                )
+            if (animals.isNotEmpty()) {
+                items(animals) { animal ->
+                    Text(
+                        text = "${animal.species} - ${animal.numberOfAnimals} pcs",
+                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            } else {
+                items(animals) { animal ->
+                    Text(
+                        text = "Brak zwierząt",
+                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
     }
-
-//    SnackbarHost(hostState = snackbarHostState, modifier = Modifier.fillMaxSize())
-//}
+    SnackbarHost(hostState = snackbarHostState, modifier = Modifier.fillMaxSize())
+}

@@ -2,8 +2,10 @@ package com.example.mrolnik.service
 
 import android.util.Log
 import com.example.mrolnik.config.SupabaseClient
+import com.example.mrolnik.model.Animal
 import com.example.mrolnik.model.Orchard
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 
 class OrchardService {
     val supabase = SupabaseClient().getSupabaseClient()
@@ -38,5 +40,31 @@ class OrchardService {
         } catch (e: Exception) {
             Log.e("OrchardService", "Adding orchardId to association table error: ${e.message}")
         }
+    }
+
+    suspend fun getAllByUserId(): List<Orchard> {
+        var usersOrchards: List<Orchard> = emptyList()
+        try {
+            val userId = UserService.getLoggedUserId()
+
+            val usersOrchardsId = supabase.from("user_orchard")
+                .select(columns = Columns.list("orchardId")) {
+                    filter {
+                        eq("userId", userId)
+                    }
+                }
+                .decodeList<Map<String, Int>>()
+                .mapNotNull { it["orchardId"] }
+
+            usersOrchards = supabase.from("orchard").select {
+                filter {
+                    isIn("orchardId", usersOrchardsId)
+                }
+            }
+                .decodeList<Orchard>()
+        } catch (e: Exception) {
+            Log.e("OrchardService", "Fetching user's orchards error ${e.message}")
+        }
+        return usersOrchards
     }
 }

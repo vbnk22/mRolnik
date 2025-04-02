@@ -2,16 +2,21 @@ package com.example.mrolnik.screen
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.mrolnik.model.Animal
 import com.example.mrolnik.model.Orchard
 import com.example.mrolnik.service.OrchardService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun OrchardManagementScreen() {
@@ -20,6 +25,7 @@ fun OrchardManagementScreen() {
     var orchardFruitTrees by remember { mutableStateOf(mapOf<String, List<String>>()) }
     var orchard: Orchard
     var orchardService = OrchardService()
+    var orchards by remember { mutableStateOf(emptyList<Orchard>()) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         if (selectedOrchard == null) {
@@ -48,16 +54,30 @@ fun OrchardManagementScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
             Text("List of Orchards:", style = MaterialTheme.typography.headlineSmall)
-            Column {
-//                orchards.forEach { orchard ->
-//                    Text(
-//                        text = orchard,
-//                        modifier = Modifier.fillMaxWidth()
-//                            .padding(8.dp)
-//                            .clickable { selectedOrchard = orchard },
-//                        style = MaterialTheme.typography.bodyLarge
-//                    )
-//                }
+            LaunchedEffect(Unit) {
+                val fetchedOrchards = withContext(Dispatchers.IO) {
+                    orchardService.getAllByUserId()
+                }
+                orchards = fetchedOrchards
+            }
+            LazyColumn {
+                if (orchards.isNotEmpty()) {
+                    items(orchards) { orchard ->
+                        Text(
+                            text = orchard.orchardName,
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                } else {
+                    items(orchards) { orchard ->
+                        Text(
+                            text = "Brak sadów",
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
             }
         } else {
             OrchardDetailScreen(

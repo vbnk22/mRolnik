@@ -2,8 +2,10 @@ package com.example.mrolnik.service
 
 import android.util.Log
 import com.example.mrolnik.config.SupabaseClient
+import com.example.mrolnik.model.Animal
 import com.example.mrolnik.model.Vehicle
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 
 class VehicleService {
     val supabase = SupabaseClient().getSupabaseClient()
@@ -39,5 +41,31 @@ class VehicleService {
         } catch (e: Exception) {
             Log.e("VehicleService", "Adding vehicleId to association table error: ${e.message}")
         }
+    }
+
+    suspend fun getAllByUserId(): List<Vehicle> {
+        var usersVehicles: List<Vehicle> = emptyList()
+        try {
+            val userId = UserService.getLoggedUserId()
+
+            val usersVehiclesId = supabase.from("user_vehicle")
+                .select(columns = Columns.list("vehicleId")) {
+                    filter {
+                        eq("userId", userId)
+                    }
+                }
+                .decodeList<Map<String, Int>>()
+                .mapNotNull { it["vehicleId"] }
+
+            usersVehicles = supabase.from("vehicle").select {
+                filter {
+                    isIn("vehicleId", usersVehiclesId)
+                }
+            }
+                .decodeList<Vehicle>()
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Fetching user's vehicles error ${e.message}")
+        }
+        return usersVehicles
     }
 }
