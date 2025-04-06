@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -20,7 +21,7 @@ fun AnimalsManagementScreen(navController: NavController) {
     var showForm by remember { mutableStateOf(false) }
     var newAnimal by remember { mutableStateOf("") }
     var newAnimalCount by remember { mutableStateOf("") }
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
     var animal: Animal
     var animalService = AnimalService()
     var animals by remember { mutableStateOf(emptyList<Animal>()) }
@@ -50,6 +51,10 @@ fun AnimalsManagementScreen(navController: NavController) {
                             animal = Animal(newAnimal,newAnimalCount.toInt())
                             animalService.addAnimal(animal)
                             animalService.addAnimalIdToAssociationTable()
+                            val fetchedAnimals = withContext(Dispatchers.IO) {
+                                animalService.getAllByUserId()
+                            }
+                            animals = fetchedAnimals
                             newAnimal = ""
                             newAnimalCount = ""
                             showForm = false
@@ -73,17 +78,15 @@ fun AnimalsManagementScreen(navController: NavController) {
         LazyColumn {
             if (animals.isNotEmpty()) {
                 items(animals) { animal ->
-                    Text(
-                        text = "${animal.species} - ${animal.numberOfAnimals} pcs",
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    AnimalRow(animal = animal)
                 }
             } else {
-                items(animals) { animal ->
+                item {
                     Text(
                         text = "Brak zwierząt",
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -91,4 +94,78 @@ fun AnimalsManagementScreen(navController: NavController) {
         }
     }
     SnackbarHost(hostState = snackbarHostState, modifier = Modifier.fillMaxSize())
+}
+
+data class animalInputField(val label: String, val value: String)
+
+@Composable
+fun AnimalRow(animal: Animal) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    // Lista pól, które chcemy edytować, oparta na obiekcie Animal
+    val inputFields = listOf(
+        animalInputField("Gatunek", animal.species),
+        animalInputField("Liczba zwierząt", animal.numberOfAnimals.toString()),
+    )
+
+    // Stan dla dynamicznie tworzonych inputów
+    var inputFieldValues by remember { mutableStateOf(inputFields.associateWith { it.value }) }
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "${animal.species} - ${animal.numberOfAnimals}",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Button(
+                onClick = { showDialog = true },
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text("Edit")
+            }
+            Button(
+                onClick = { /* TODO: Handle delete */ },
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                Text("Delete")
+            }
+        }
+
+        if (showDialog) {
+            CustomModalDialog(
+                onDismiss = { showDialog = false },
+                title = "Edytuj: ${animal.species}",
+                onConfirm = {
+                    // TODO: zrobić edycje w bazie danych :> kolejność pól powinna być w zmiennej inputFields a nowe dane w inputFieldValues oraz odpowiednio zrzutować na typ
+                    inputFieldValues.forEach { (key, value) ->
+                        println(value)
+                    }
+                    showDialog = false
+                },
+                content = {
+                    inputFields.forEach { inputField ->
+                        TextField(
+                            value = inputFieldValues[inputField] ?: "",
+                            onValueChange = { newValue ->
+                                inputFieldValues = inputFieldValues.toMutableMap().apply {
+                                    this[inputField] = newValue
+                                }
+                            },
+                            label = { Text(inputField.label) },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Wpisz ${inputField.label}") }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            )
+        }
+    }
 }
