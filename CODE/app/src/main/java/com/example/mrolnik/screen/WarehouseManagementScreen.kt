@@ -14,8 +14,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import com.example.mrolnik.model.Animal
 import com.example.mrolnik.service.WarehouseService
@@ -52,6 +54,12 @@ fun WarehouseManagementScreen() {
                             warehouse = Warehouse(warehouseName)
                             warehouseService.addWarehouse(warehouse)
                             warehouseService.addWarehouseIdToAssociationTable()
+
+                            val fetchedWarehouses = withContext(Dispatchers.IO) {
+                                warehouseService.getAllByUserId()
+                            }
+                            warehouses = fetchedWarehouses
+
                             newWarehouse = ""
                             showForm = false
                         }
@@ -73,11 +81,7 @@ fun WarehouseManagementScreen() {
             LazyColumn {
                 if (warehouses.isNotEmpty()) {
                     items(warehouses) { warehouse ->
-                        Text(
-                            text = warehouse.warehouseName,
-                            modifier = Modifier.fillMaxWidth().padding(8.dp),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                        WarehouseRow(warehouse)
                     }
                 } else {
                     items(warehouses) { warehouse ->
@@ -103,6 +107,87 @@ fun WarehouseManagementScreen() {
 //        }
         }
     }}
+
+data class warehouseInputField(val label: String, val value: String)
+
+@Composable
+fun WarehouseRow(warehouse: Warehouse) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    // Lista pól, które chcemy edytować, oparta na obiekcie Animal
+    val inputFields = listOf(
+        warehouseInputField("Nazwa", warehouse.warehouseName),
+    )
+
+    // Stan dla dynamicznie tworzonych inputów
+    var inputFieldValues by remember { mutableStateOf(inputFields.associateWith { it.value }) }
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = warehouse.warehouseName,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Button(
+                onClick = { showDialog = true },
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text("Edit")
+            }
+            Button(
+                onClick = { /* TODO: Handle delete */ },
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                Text("Delete")
+            }
+            Button(
+                onClick = { /* TODO: Przejscie do zasobów w magazynie */ },
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                Text("Info")
+            }
+        }
+
+        if (showDialog) {
+            CustomModalDialog(
+                onDismiss = { showDialog = false },
+                title = "Edytuj: ${warehouse.warehouseName}",
+                onConfirm = {
+                    // TODO: zrobić edycje w bazie danych :> kolejność pól powinna być w zmiennej inputFields a nowe dane w inputFieldValues oraz odpowiednio zrzutować na typ
+                    inputFieldValues.forEach { (key, value) ->
+                        println(value)
+                    }
+                    showDialog = false
+                },
+                content = {
+                    inputFields.forEach { inputField ->
+                        TextField(
+                            value = inputFieldValues[inputField] ?: "",
+                            onValueChange = { newValue ->
+                                inputFieldValues = inputFieldValues.toMutableMap().apply {
+                                    this[inputField] = newValue
+                                }
+                            },
+                            label = { Text(inputField.label) },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Wpisz ${inputField.label}") }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            )
+        }
+    }
+}
+
+
 //
 //@Composable
 //fun WarehouseDetailScreen(warehouseName: String, resources: List<String>, onAddResource: (String) -> Unit, onBack: () -> Unit) {
