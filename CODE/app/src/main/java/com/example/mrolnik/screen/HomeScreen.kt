@@ -2,11 +2,9 @@ package com.example.mrolnik.screen
 
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,13 +45,13 @@ fun HomeScreen() {
             ChatScreen()
         }
         composable("fields") {
-            FieldManagementScreen()
+            FieldManagementScreen(navController)
         }
         composable("marketplace") {
             MarketplaceScreen()
         }
         composable("orchard") {
-            OrchardManagementScreen()
+            OrchardManagementScreen(navController)
         }
         composable("planner") {
             PlannerScreen()
@@ -62,7 +60,7 @@ fun HomeScreen() {
             VehicleManagementScreen(navController)
         }
         composable("warehouse") {
-            WarehouseManagementScreen()
+            WarehouseManagementScreen(navController)
         }
         composable("announcement") {
             AnnouncementScreen()
@@ -86,7 +84,35 @@ fun HomePage(navController: NavController) {
         ) {
             Text(text = "Zarządzanie zwierzętami", color = MaterialTheme.colorScheme.onPrimary)
         }
+        Button(
+            onClick = { navController.navigate("fields") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text(text = "Zarządzanie polami", color = MaterialTheme.colorScheme.onPrimary)
+        }
+        Button(
+            onClick = { navController.navigate("orchard") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text(text = "Zarządzanie sadami", color = MaterialTheme.colorScheme.onPrimary)
+        }
+        Button(
+            onClick = { navController.navigate("vehicle") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text(text = "Zarządzanie pojazdami", color = MaterialTheme.colorScheme.onPrimary)
+        }
 
+        Button(
+            onClick = { navController.navigate("warehouse") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text(text = "Zarządzanie magazynami", color = MaterialTheme.colorScheme.onPrimary)
+        }
         Button(
             onClick = { navController.navigate("announcement") },
             modifier = Modifier.fillMaxWidth(),
@@ -104,14 +130,6 @@ fun HomePage(navController: NavController) {
         }
 
         Button(
-            onClick = { navController.navigate("fields") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Text(text = "Zarządzanie polami", color = MaterialTheme.colorScheme.onPrimary)
-        }
-
-        Button(
             onClick = { navController.navigate("marketplace") },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -125,30 +143,6 @@ fun HomePage(navController: NavController) {
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text(text = "Planer", color = MaterialTheme.colorScheme.onPrimary)
-        }
-
-        Button(
-            onClick = { navController.navigate("orchard") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Text(text = "Zarządzanie sadami", color = MaterialTheme.colorScheme.onPrimary)
-        }
-
-        Button(
-            onClick = { navController.navigate("vehicle") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Text(text = "Zarządzanie pojazdami", color = MaterialTheme.colorScheme.onPrimary)
-        }
-
-        Button(
-            onClick = { navController.navigate("warehouse") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Text(text = "Zarządzanie magazynem", color = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }

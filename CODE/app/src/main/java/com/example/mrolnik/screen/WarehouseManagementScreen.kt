@@ -12,14 +12,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.mrolnik.model.Animal
+import androidx.navigation.NavController
+import com.example.mrolnik.R
 import com.example.mrolnik.service.WarehouseService
 import com.example.mrolnik.model.Warehouse
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +32,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun WarehouseManagementScreen() {
+fun WarehouseManagementScreen(navController: NavController) {
     var showForm by remember { mutableStateOf(false) }
     var selectedWarehouse by remember { mutableStateOf<String?>(null) }
     var warehouseName by remember { mutableStateOf("") }
@@ -39,39 +43,75 @@ fun WarehouseManagementScreen() {
     var warehouse: Warehouse
     var warehouseService = WarehouseService()
 
+    val backIcon = painterResource(R.drawable.baseline_arrow_back)
+    val addIcon = painterResource(id = R.drawable.baseline_add)
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        if (selectedWarehouse == null) {
-            OutlinedTextField(
-                value = warehouseName,
-                onValueChange = { warehouseName = it },
-                label = { Text("Warehouse Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
+
+        if (selectedWarehouse == null) {//TODO: nie wiem po co to, warto przemyślec czy to potrzebne, else do tego jest zakomentowany
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        painter = backIcon,
+                        contentDescription = "Wróć",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Zarządzanie magazynami",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
             Button(
                 onClick = {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        if (warehouseName.isNotBlank()) {
-                            warehouse = Warehouse(warehouseName)
-                            warehouseService.addWarehouse(warehouse)
-                            warehouseService.addWarehouseIdToAssociationTable()
-
-                            val fetchedWarehouses = withContext(Dispatchers.IO) {
-                                warehouseService.getAllByUserId()
-                            }
-                            warehouses = fetchedWarehouses
-
-                            newWarehouse = ""
-                            showForm = false
-                        }
-                    }
+                    showForm = true
                 },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text("Add Warehouse")
+                Icon(
+                    painter = addIcon,
+                    contentDescription = "ADD_WAREHOUSE",
+                    modifier = Modifier.size(24.dp)
+                )
             }
+            if (showForm) {
+                OutlinedTextField(
+                    value = warehouseName,
+                    onValueChange = { warehouseName = it },
+                    label = { Text("Nazwa magazynu") },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+                Button(
+                    onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            if (warehouseName.isNotBlank()) {
+                                warehouse = Warehouse(warehouseName)
+                                warehouseService.addWarehouse(warehouse)
+                                warehouseService.addWarehouseIdToAssociationTable()
 
+                                val fetchedWarehouses = withContext(Dispatchers.IO) {
+                                    warehouseService.getAllByUserId()
+                                }
+                                warehouses = fetchedWarehouses
+
+                                warehouseName = ""
+                                showForm = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text("Dodaj pojazd")
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("List of Warehouses:", style = MaterialTheme.typography.headlineSmall)
+            Text("Twoje magazyny:", style = MaterialTheme.typography.headlineSmall)
             LaunchedEffect(Unit) {
                 val fetchedWarehouses = withContext(Dispatchers.IO) {
                     warehouseService.getAllByUserId()
@@ -84,6 +124,8 @@ fun WarehouseManagementScreen() {
                         WarehouseRow(warehouse)
                     }
                 } else {
+                    //TODO: handle empty
+
                     items(warehouses) { warehouse ->
                         Text(
                             text = "Brak magazynów",
@@ -93,7 +135,8 @@ fun WarehouseManagementScreen() {
                     }
                 }
             }
-//        } else {
+        }
+//        else {
 //            WarehouseDetailScreen(
 //                warehouseName = selectedWarehouse!!,
 //                resources = warehouseResources[selectedWarehouse] ?: listOf(),
@@ -105,8 +148,8 @@ fun WarehouseManagementScreen() {
 //                onBack = { selectedWarehouse = null }
 //            )
 //        }
-        }
-    }}
+    }
+}
 
 data class warehouseInputField(val label: String, val value: String)
 
@@ -114,13 +157,14 @@ data class warehouseInputField(val label: String, val value: String)
 fun WarehouseRow(warehouse: Warehouse) {
     var showDialog by remember { mutableStateOf(false) }
 
-    // Lista pól, które chcemy edytować, oparta na obiekcie Animal
-    val inputFields = listOf(
+        val inputFields = listOf(
         warehouseInputField("Nazwa", warehouse.warehouseName),
     )
 
-    // Stan dla dynamicznie tworzonych inputów
     var inputFieldValues by remember { mutableStateOf(inputFields.associateWith { it.value }) }
+    val editIcon = painterResource(id = R.drawable.baseline_edit)
+    val deleteIcon = painterResource(id = R.drawable.baseline_delete)
+    val infoIcon    = painterResource(id = R.drawable.baseline_info)
 
     Column {
         Row(
@@ -139,19 +183,31 @@ fun WarehouseRow(warehouse: Warehouse) {
                 onClick = { showDialog = true },
                 modifier = Modifier.padding(start = 8.dp)
             ) {
-                Text("Edit")
+                Icon(
+                    painter = editIcon,
+                    contentDescription = "EDIT",
+                    modifier = Modifier.size(24.dp)
+                )
             }
             Button(
                 onClick = { /* TODO: Handle delete */ },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
-                Text("Delete")
+                Icon(
+                    painter = deleteIcon,
+                    contentDescription = "DELETE",
+                    modifier = Modifier.size(24.dp)
+                )
             }
             Button(
                 onClick = { /* TODO: Przejscie do zasobów w magazynie */ },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
-                Text("Info")
+                Icon(
+                    painter = infoIcon,
+                    contentDescription = "INFO",
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 
