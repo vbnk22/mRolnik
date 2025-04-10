@@ -7,8 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.mrolnik.R
 import com.example.mrolnik.model.Animal
 import com.example.mrolnik.service.AnimalService
 import kotlinx.coroutines.CoroutineScope
@@ -25,23 +27,50 @@ fun AnimalsManagementScreen(navController: NavController) {
     var animal: Animal
     var animalService = AnimalService()
     var animals by remember { mutableStateOf(emptyList<Animal>()) }
+    val backIcon = painterResource(R.drawable.baseline_arrow_back)
+    val addIcon = painterResource(id = R.drawable.baseline_add)
+
+
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    painter = backIcon,
+                    contentDescription = "Wróć",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Zarządzanie zwierzętami",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
         Button(onClick = { showForm = true }) {
-            Text("Add Animal")
+            Icon(
+                painter = addIcon,
+                contentDescription = "ADD",
+                modifier = Modifier.size(24.dp)
+            )
         }
 
         if (showForm) {
             OutlinedTextField(
                 value = newAnimal,
                 onValueChange = { newAnimal = it },
-                label = { Text("Animal Name") },
+                label = { Text("Nazwa zwierzęcia") },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             )
             OutlinedTextField(
                 value = newAnimalCount,
                 onValueChange = { newAnimalCount = it.filter { it.isDigit() } },
-                label = { Text("Animal Count") },
+                label = { Text("Liczba zwierząt") },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             )
             Button(
@@ -63,12 +92,12 @@ fun AnimalsManagementScreen(navController: NavController) {
                 },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text("Save Animal")
+                Text("Dodaj zwierzę")
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Animal List:", style = MaterialTheme.typography.headlineSmall)
+        Text("Twoje zwierzęta:", style = MaterialTheme.typography.headlineSmall)
         LaunchedEffect(Unit) {
             val fetchedAnimals = withContext(Dispatchers.IO) {
                 animalService.getAllByUserId()
@@ -81,15 +110,14 @@ fun AnimalsManagementScreen(navController: NavController) {
                     AnimalRow(animal = animal)
                 }
             } else {
-                item {
-                    Text(
-                        text = "Brak zwierząt",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+                //TODO: handle empty
+//                items(animals) { animal ->
+//                    Text(
+//                        text = "Brak zwierząt",
+//                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+//                        style = MaterialTheme.typography.bodyLarge
+//                    )
+//                }
             }
         }
     }
@@ -110,6 +138,8 @@ fun AnimalRow(animal: Animal) {
 
     // Stan dla dynamicznie tworzonych inputów
     var inputFieldValues by remember { mutableStateOf(inputFields.associateWith { it.value }) }
+    val editIcon = painterResource(id = R.drawable.baseline_edit)
+    val deleteIcon = painterResource(id = R.drawable.baseline_delete)
 
     Column {
         Row(
@@ -120,7 +150,7 @@ fun AnimalRow(animal: Animal) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "${animal.species} - ${animal.numberOfAnimals}",
+                text = "${animal.species}: ${animal.numberOfAnimals}",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f)
             )
@@ -128,13 +158,21 @@ fun AnimalRow(animal: Animal) {
                 onClick = { showDialog = true },
                 modifier = Modifier.padding(start = 8.dp)
             ) {
-                Text("Edit")
+                Icon(
+                    painter = editIcon,
+                    contentDescription = "EDIT",
+                    modifier = Modifier.size(24.dp)
+                )
             }
             Button(
                 onClick = { /* TODO: Handle delete */ },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
-                Text("Delete")
+                Icon(
+                    painter = deleteIcon,
+                    contentDescription = "DELETE",
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 

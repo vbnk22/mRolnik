@@ -7,11 +7,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import com.example.mrolnik.R
 import com.example.mrolnik.model.Animal
 import com.example.mrolnik.model.Field
+import com.example.mrolnik.model.Orchard
 import com.example.mrolnik.service.FieldService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,41 +24,85 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun FieldManagementScreen() {
+fun FieldManagementScreen(navController: NavController) {
+    var showForm by remember { mutableStateOf(false) }
     var selectedField by remember { mutableStateOf<String?>(null) }
     var fieldName by remember { mutableStateOf("") }
     var fieldCultivations by remember { mutableStateOf(mapOf<String, List<String>>()) }
     var field: Field
     var fieldService = FieldService()
     var fields by remember { mutableStateOf(emptyList<Field>()) }
+    val backIcon = painterResource(R.drawable.baseline_arrow_back)
+    val addIcon = painterResource(id = R.drawable.baseline_add)
+
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        if (selectedField == null) {
-            OutlinedTextField(
-                value = fieldName,
-                onValueChange = { fieldName = it },
-                label = { Text("Field Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
+
+        if (selectedField == null) {//TODO: nie wiem po co to, warto przemyślec czy to potrzebne, else do tego jest zakomentowany
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        painter = backIcon,
+                        contentDescription = "Wróć",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Zarządzanie polami",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
             Button(
                 onClick = {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        if (fieldName.isNotBlank()) {
-                            field = Field(fieldName)
-                            fieldService.addField(field)
-                            fieldService.addFieldIdToAssociationTable()
-                            fieldCultivations = fieldCultivations + (fieldName to listOf())
-                            fieldName = ""
-                        }
-                    }
+                    showForm = true
                 },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text("Add Field")
+                Icon(
+                    painter = addIcon,
+                    contentDescription = "ADD",
+                    modifier = Modifier.size(24.dp)
+                )
             }
+            if (showForm) {
+                OutlinedTextField(
+                    value = fieldName,
+                    onValueChange = { fieldName = it },
+                    label = { Text("Nazwa pola") },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
+                Button(
+                    onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            if (fieldName.isNotBlank()) {
+                                field = Field(fieldName)
+                                fieldService.addField(field)
+                                fieldService.addFieldIdToAssociationTable()
+                                fieldCultivations = fieldCultivations + (fieldName to listOf())
+                                fieldName = ""
+                                val fetchedFields = withContext(Dispatchers.IO) {
+                                    fieldService.getAllByUserId()
+                                }
+                                fields = fetchedFields
+                                showForm = false
+                            }
+                        }
+
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text("Dodaj pole")
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("List of Fields:", style = MaterialTheme.typography.headlineSmall)
+            Text("Twoje pola:", style = MaterialTheme.typography.headlineSmall)
             LaunchedEffect(Unit) {
                 val fetchedFields = withContext(Dispatchers.IO) {
                     fieldService.getAllByUserId()
@@ -63,131 +112,216 @@ fun FieldManagementScreen() {
             LazyColumn {
                 if (fields.isNotEmpty()) {
                     items(fields) { field ->
-                        Text(
-                            text = field.fieldName,
-                            modifier = Modifier.fillMaxWidth().padding(8.dp),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                        FieldRow(field)
                     }
                 } else {
-                    items(fields) { field ->
-                        Text(
-                            text = "Brak pól",
-                            modifier = Modifier.fillMaxWidth().padding(8.dp),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
+                    //TODO: handle empty
+//                    items(fields) { field ->
+//                        Text(
+//                            text = "Brak pól",
+//                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+//                            style = MaterialTheme.typography.bodyLarge
+//                        )
+//                    }
                 }
             }
-        } else {
-            FieldDetailScreen(
-                fieldName = selectedField!!,
-                cultivations = fieldCultivations[selectedField] ?: listOf(),
-                onAddCultivation = { cultivation ->
-                    fieldCultivations = fieldCultivations.toMutableMap().apply {
-                        this[selectedField!!] = (this[selectedField] ?: listOf()) + cultivation
+        }
+//        else {
+//            FieldDetailScreen(
+//                fieldName = selectedField!!,
+//                cultivations = fieldCultivations[selectedField] ?: listOf(),
+//                onAddCultivation = { cultivation ->
+//                    fieldCultivations = fieldCultivations.toMutableMap().apply {
+//                        this[selectedField!!] = (this[selectedField] ?: listOf()) + cultivation
+//                    }
+//                },
+//                onBack = { selectedField = null }
+//            )
+//        }
+    }
+}
+@Composable
+fun FieldRow(field:Field) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    val inputFields = listOf(
+        warehouseInputField("Nazwa", field.fieldName),
+    )
+
+    var inputFieldValues by remember { mutableStateOf(inputFields.associateWith { it.value }) }
+    val editIcon = painterResource(id = R.drawable.baseline_edit)
+    val deleteIcon = painterResource(id = R.drawable.baseline_delete)
+    val infoIcon = painterResource(id = R.drawable.baseline_info)
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = field.fieldName,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Button(
+                onClick = { showDialog = true },
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Icon(
+                    painter = editIcon,
+                    contentDescription = "EDIT",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Button(
+                onClick = { /* TODO: Handle delete */ },
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                Icon(
+                    painter = deleteIcon,
+                    contentDescription = "DELETE",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Button(
+                onClick = { /* TODO: Przejscie do zasobów w magazynie */ },
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                Icon(
+                    painter = infoIcon,
+                    contentDescription = "INFO",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        if (showDialog) {
+            CustomModalDialog(
+                onDismiss = { showDialog = false },
+                title = "Edytuj: ${field.fieldName}",
+                onConfirm = {
+                    // TODO: zrobić edycje w bazie danych :> kolejność pól powinna być w zmiennej inputFields a nowe dane w inputFieldValues oraz odpowiednio zrzutować na typ
+                    inputFieldValues.forEach { (key, value) ->
+                        println(value)
                     }
+                    showDialog = false
                 },
-                onBack = { selectedField = null }
+                content = {
+                    inputFields.forEach { inputField ->
+                        TextField(
+                            value = inputFieldValues[inputField] ?: "",
+                            onValueChange = { newValue ->
+                                inputFieldValues = inputFieldValues.toMutableMap().apply {
+                                    this[inputField] = newValue
+                                }
+                            },
+                            label = { Text(inputField.label) },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Wpisz ${inputField.label}") }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
             )
         }
     }
 }
+//@Composable
+//fun FieldDetailScreen(fieldName: String, cultivations: List<String>, onAddCultivation: (String) -> Unit, onBack: () -> Unit) {
+//    var showCultivationForm by remember { mutableStateOf(false) }
+//
+//    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+//        Text("Field: $fieldName", style = MaterialTheme.typography.headlineSmall)
+//
+//        Spacer(modifier = Modifier.height(16.dp))
+//        Text("Cultivations in this field:", style = MaterialTheme.typography.bodyLarge)
+//        Column {
+//            cultivations.forEach { cultivation ->
+//                Text(text = cultivation, modifier = Modifier.padding(4.dp))
+//            }
+//        }
+//
+//        Button(
+//            onClick = { showCultivationForm = !showCultivationForm },
+//            modifier = Modifier.padding(top = 8.dp)
+//        ) {
+//            Text(if (showCultivationForm) "Hide Cultivation Form" else "Add Cultivation")
+//        }
+//
+//        if (showCultivationForm) {
+//            CultivationForm(onAddCultivation)
+//        }
+//
+//        Button(
+//            onClick = onBack,
+//            modifier = Modifier.padding(top = 8.dp)
+//        ) {
+//            Text("Back to Fields")
+//        }
+//    }
+//}
 
-@Composable
-fun FieldDetailScreen(fieldName: String, cultivations: List<String>, onAddCultivation: (String) -> Unit, onBack: () -> Unit) {
-    var showCultivationForm by remember { mutableStateOf(false) }
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Field: $fieldName", style = MaterialTheme.typography.headlineSmall)
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Cultivations in this field:", style = MaterialTheme.typography.bodyLarge)
-        Column {
-            cultivations.forEach { cultivation ->
-                Text(text = cultivation, modifier = Modifier.padding(4.dp))
-            }
-        }
-
-        Button(
-            onClick = { showCultivationForm = !showCultivationForm },
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            Text(if (showCultivationForm) "Hide Cultivation Form" else "Add Cultivation")
-        }
-
-        if (showCultivationForm) {
-            CultivationForm(onAddCultivation)
-        }
-
-        Button(
-            onClick = onBack,
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            Text("Back to Fields")
-        }
-    }
-}
-
-@Composable
-fun CultivationForm(onAddCultivation: (String) -> Unit) {
-    var plantName by remember { mutableStateOf("") }
-    var sowingDate by remember { mutableStateOf("") }
-    var harvestDate by remember { mutableStateOf("") }
-    var fertilizerQty by remember { mutableStateOf("") }
-    var sprayingQty by remember { mutableStateOf("") }
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        OutlinedTextField(
-            value = plantName,
-            onValueChange = { plantName = it },
-            label = { Text("Plant Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = sowingDate,
-            onValueChange = { sowingDate = it },
-            label = { Text("Sowing Date") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = harvestDate,
-            onValueChange = { harvestDate = it },
-            label = { Text("Planned Harvest Date") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = fertilizerQty,
-            onValueChange = { fertilizerQty = it },
-            label = { Text("Used Fertilizer Quantity") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = sprayingQty,
-            onValueChange = { sprayingQty = it },
-            label = { Text("Used Spraying Quantity") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Button(
-            onClick = {
-                if (plantName.isNotBlank() && sowingDate.isNotBlank() && harvestDate.isNotBlank() && fertilizerQty.isNotBlank() && sprayingQty.isNotBlank()) {
-                    onAddCultivation("$plantName - $sowingDate - $harvestDate - Fertilizer: $fertilizerQty kg - Spraying: $sprayingQty L")
-                    plantName = ""
-                    sowingDate = ""
-                    harvestDate = ""
-                    fertilizerQty = ""
-                    sprayingQty = ""
-                }
-            },
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            Text("Save Cultivation Data")
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewFieldManagement() {
-    FieldManagementScreen()
-}
+//@Composable
+//fun CultivationForm(onAddCultivation: (String) -> Unit) {
+//    var plantName by remember { mutableStateOf("") }
+//    var sowingDate by remember { mutableStateOf("") }
+//    var harvestDate by remember { mutableStateOf("") }
+//    var fertilizerQty by remember { mutableStateOf("") }
+//    var sprayingQty by remember { mutableStateOf("") }
+//
+//    Column(modifier = Modifier.padding(16.dp)) {
+//        OutlinedTextField(
+//            value = plantName,
+//            onValueChange = { plantName = it },
+//            label = { Text("Plant Name") },
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        OutlinedTextField(
+//            value = sowingDate,
+//            onValueChange = { sowingDate = it },
+//            label = { Text("Sowing Date") },
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        OutlinedTextField(
+//            value = harvestDate,
+//            onValueChange = { harvestDate = it },
+//            label = { Text("Planned Harvest Date") },
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        OutlinedTextField(
+//            value = fertilizerQty,
+//            onValueChange = { fertilizerQty = it },
+//            label = { Text("Used Fertilizer Quantity") },
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        OutlinedTextField(
+//            value = sprayingQty,
+//            onValueChange = { sprayingQty = it },
+//            label = { Text("Used Spraying Quantity") },
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        Button(
+//            onClick = {
+//                if (plantName.isNotBlank() && sowingDate.isNotBlank() && harvestDate.isNotBlank() && fertilizerQty.isNotBlank() && sprayingQty.isNotBlank()) {
+//                    onAddCultivation("$plantName - $sowingDate - $harvestDate - Fertilizer: $fertilizerQty kg - Spraying: $sprayingQty L")
+//                    plantName = ""
+//                    sowingDate = ""
+//                    harvestDate = ""
+//                    fertilizerQty = ""
+//                    sprayingQty = ""
+//                }
+//            },
+//            modifier = Modifier.padding(top = 8.dp)
+//        ) {
+//            Text("Save Cultivation Data")
+//        }
+//    }
+//}
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewFieldManagement() {
+//    FieldManagementScreen()
+//}
