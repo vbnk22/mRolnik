@@ -31,6 +31,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+var warehouseService = WarehouseService()
+
 @Composable
 fun WarehouseManagementScreen(navController: NavController) {
     var showForm by remember { mutableStateOf(false) }
@@ -41,7 +43,6 @@ fun WarehouseManagementScreen(navController: NavController) {
 
     var newWarehouse by remember { mutableStateOf("") }
     var warehouse: Warehouse
-    var warehouseService = WarehouseService()
 
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
     val addIcon = painterResource(id = R.drawable.baseline_add)
@@ -107,7 +108,7 @@ fun WarehouseManagementScreen(navController: NavController) {
                     },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text("Dodaj pojazd")
+                    Text("Dodaj magazyn")
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -190,7 +191,12 @@ fun WarehouseRow(warehouse: Warehouse) {
                 )
             }
             Button(
-                onClick = { /* TODO: Handle delete */ },
+                onClick = {
+                    // TODO odswiezyc liste magazynów po usunięciu
+                    CoroutineScope(Dispatchers.IO).launch {
+                        warehouseService.deleteWarehouse(warehouse)
+                    }
+                },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 Icon(
@@ -216,10 +222,21 @@ fun WarehouseRow(warehouse: Warehouse) {
                 onDismiss = { showDialog = false },
                 title = "Edytuj: ${warehouse.warehouseName}",
                 onConfirm = {
-                    // TODO: zrobić edycje w bazie danych :> kolejność pól powinna być w zmiennej inputFields a nowe dane w inputFieldValues oraz odpowiednio zrzutować na typ
-                    inputFieldValues.forEach { (key, value) ->
-                        println(value)
+                    // TODO przy debugowaniu wszystko jest dobrze, po odpaleniu aplpikacji wyrzuca błąd
+                    //  po wpisaniu pustego znaku
+                    var newWarehouseName = ""
+                    if (warehouse.warehouseName.isNotBlank()) {
+                        newWarehouseName =
+                            inputFieldValues.getValue(warehouseInputField("Nazwa", warehouse.warehouseName))
                     }
+                    if (newWarehouseName.isNotBlank()) {
+                        warehouse.warehouseName = newWarehouseName
+                    }
+                    CoroutineScope(Dispatchers.IO).launch {
+                        warehouseService.updateWarehouse(warehouse)
+                    }
+
+                    // TODO wyswietlic informacje dla uzytkownika o blednym wpisaniu nazwy
                     showDialog = false
                 },
                 content = {

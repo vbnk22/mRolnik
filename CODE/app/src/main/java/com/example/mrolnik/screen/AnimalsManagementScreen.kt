@@ -18,6 +18,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+
+var animalService = AnimalService()
+
 @Composable
 fun AnimalsManagementScreen(navController: NavController) {
     var showForm by remember { mutableStateOf(false) }
@@ -25,7 +28,6 @@ fun AnimalsManagementScreen(navController: NavController) {
     var newAnimalCount by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     var animal: Animal
-    var animalService = AnimalService()
     var animals by remember { mutableStateOf(emptyList<Animal>()) }
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
     val addIcon = painterResource(id = R.drawable.baseline_add)
@@ -165,7 +167,12 @@ fun AnimalRow(animal: Animal) {
                 )
             }
             Button(
-                onClick = { /* TODO: Handle delete */ },
+                onClick = {
+                    // TODO odswiezyc liste zwierząt po usunięciu
+                    CoroutineScope(Dispatchers.IO).launch {
+                        animalService.deleteAnimal(animal)
+                    }
+                },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 Icon(
@@ -181,10 +188,21 @@ fun AnimalRow(animal: Animal) {
                 onDismiss = { showDialog = false },
                 title = "Edytuj: ${animal.species}",
                 onConfirm = {
-                    // TODO: zrobić edycje w bazie danych :> kolejność pól powinna być w zmiennej inputFields a nowe dane w inputFieldValues oraz odpowiednio zrzutować na typ
-                    inputFieldValues.forEach { (key, value) ->
-                        println(value)
+                    // TODO przy debugowaniu wszystko jest dobrze, po odpaleniu aplpikacji wyrzuca błąd
+                    //  po wpisaniu pustego znaku
+                    val newAnimalSpecies = inputFieldValues.getValue(animalInputField("Gatunek", animal.species))
+                    val newNumberOfAnimal = inputFieldValues.getValue(animalInputField("Liczba zwierząt", animal.numberOfAnimals.toString()))
+                    if (newAnimalSpecies.isNotBlank()) {
+                        animal.species = newAnimalSpecies
                     }
+                    if (newNumberOfAnimal.isNotBlank()) {
+                        animal.numberOfAnimals = newNumberOfAnimal.toInt()
+                    }
+                    CoroutineScope(Dispatchers.IO).launch {
+                        animalService.updateAnimal(animal)
+                    }
+
+                    // TODO wyswietlic informacje dla uzytkownika o blednym wpisaniu nazwy
                     showDialog = false
                 },
                 content = {

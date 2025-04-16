@@ -20,13 +20,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
+var vehicleService = VehicleService()
+
 @Composable
 fun VehicleManagementScreen(navController: NavController) {
     var showForm by remember { mutableStateOf(false) }
     var vehicleName by remember { mutableStateOf("") }
     var vehicleCondition by remember { mutableStateOf("") }
     var vehicle: Vehicle
-    var vehicleService = VehicleService()
     var vehicles by remember { mutableStateOf(emptyList<Vehicle>()) }
     val addIcon = painterResource(id = R.drawable.baseline_add)
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
@@ -127,13 +128,16 @@ fun VehicleManagementScreen(navController: NavController) {
         }
     }
 }
+
+data class vehicleInputField(val label: String, val value: String)
+
 @Composable
 fun VehicleRow(vehicle: Vehicle) {
     var showDialog by remember { mutableStateOf(false) }
 
     // Lista pól, które chcemy edytować, oparta na obiekcie Animal
     val inputFields = listOf(
-        warehouseInputField("Nazwa", vehicle.vehicleName),
+        vehicleInputField("Nazwa", vehicle.vehicleName),
     )
 
     // Stan dla dynamicznie tworzonych inputów
@@ -166,7 +170,12 @@ fun VehicleRow(vehicle: Vehicle) {
                 )
             }
             Button(
-                onClick = { /* TODO: Handle delete */ },
+                onClick = {
+                    // TODO odswiezyc liste pojazdów po usunięciu
+                    CoroutineScope(Dispatchers.IO).launch {
+                        vehicleService.deleteVehicle(vehicle)
+                    }
+                },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 Icon(
@@ -192,10 +201,21 @@ fun VehicleRow(vehicle: Vehicle) {
                 onDismiss = { showDialog = false },
                 title = "Edytuj: ${vehicle.vehicleName}",
                 onConfirm = {
-                    // TODO: zrobić edycje w bazie danych :> kolejność pól powinna być w zmiennej inputFields a nowe dane w inputFieldValues oraz odpowiednio zrzutować na typ
-                    inputFieldValues.forEach { (key, value) ->
-                        println(value)
+                    // TODO przy debugowaniu wszystko jest dobrze, po odpaleniu aplpikacji wyrzuca błąd
+                    //  po wpisaniu pustego znaku
+                    var newVehicleName = ""
+                    if (vehicle.vehicleName.isNotBlank()) {
+                        newVehicleName =
+                            inputFieldValues.getValue(vehicleInputField("Nazwa", vehicle.vehicleName))
                     }
+                    if (newVehicleName.isNotBlank()) {
+                        vehicle.vehicleName = newVehicleName
+                    }
+                    CoroutineScope(Dispatchers.IO).launch {
+                        vehicleService.updateVehicle(vehicle)
+                    }
+
+                    // TODO wyswietlic informacje dla uzytkownika o blednym wpisaniu nazwy
                     showDialog = false
                 },
                 content = {

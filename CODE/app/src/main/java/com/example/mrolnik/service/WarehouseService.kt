@@ -2,7 +2,7 @@ package com.example.mrolnik.service
 
 import android.util.Log
 import com.example.mrolnik.config.SupabaseClient
-import com.example.mrolnik.model.Animal
+import com.example.mrolnik.model.Vehicle
 import io.github.jan.supabase.postgrest.from
 import com.example.mrolnik.model.Warehouse
 import io.github.jan.supabase.postgrest.query.Columns
@@ -66,5 +66,33 @@ class WarehouseService {
             Log.e("WarehouseService", "Fetching user's warehouses error ${e.message}")
         }
         return usersWarehouses
+    }
+
+    suspend fun updateWarehouse(warehouse: Warehouse) {
+        try {
+            supabase.from("warehouse").update(
+                {
+                    set("warehouseName", warehouse.warehouseName)
+                }
+            ) {
+                filter {
+                    eq("warehouseId", warehouse.warehouseId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("WarehouseService", "Updating warehouse data error ${e.message}")
+        }
+    }
+
+    suspend fun deleteWarehouse(warehouse: Warehouse) {
+        try {
+            supabase.from("warehouse").delete {
+                filter {
+                    eq("warehouseId", warehouse.warehouseId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("WarehouseService", "Deleting warehouse error ${e.message}")
+        }
     }
 }
