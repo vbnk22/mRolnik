@@ -68,4 +68,32 @@ class VehicleService {
         }
         return usersVehicles
     }
+
+    suspend fun updateVehicle(vehicle: Vehicle) {
+        try {
+            supabase.from("vehicle").update(
+                {
+                    set("vehicleName", vehicle.vehicleName)
+                }
+            ) {
+                filter {
+                    eq("vehicleId", vehicle.vehicleId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Updating vehicle data error ${e.message}")
+        }
+    }
+
+    suspend fun deleteVehicle(vehicle: Vehicle) {
+        try {
+            supabase.from("vehicle").delete {
+                filter {
+                    eq("vehicleId", vehicle.vehicleId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Deleting vehicle error ${e.message}")
+        }
+    }
 }

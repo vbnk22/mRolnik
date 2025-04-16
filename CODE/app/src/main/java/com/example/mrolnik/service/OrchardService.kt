@@ -67,4 +67,32 @@ class OrchardService {
         }
         return usersOrchards
     }
+
+    suspend fun updateOrchard(orchard: Orchard) {
+        try {
+            supabase.from("orchard").update(
+                {
+                    set("orchardName", orchard.orchardName)
+                }
+            ) {
+                filter {
+                    eq("orchardId", orchard.orchardId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("OrchardService", "Updating orchard data error ${e.message}")
+        }
+    }
+
+    suspend fun deleteOrchard(orchard: Orchard) {
+        try {
+            supabase.from("orchard").delete {
+                filter {
+                    eq("orchardId", orchard.orchardId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("OrchardService", "Deleting orchard error ${e.message}")
+        }
+    }
 }

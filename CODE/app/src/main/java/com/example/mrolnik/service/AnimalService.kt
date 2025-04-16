@@ -4,11 +4,12 @@ import android.util.Log
 import com.example.mrolnik.config.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import com.example.mrolnik.model.Animal
+import com.example.mrolnik.model.Field
 import io.github.jan.supabase.postgrest.query.Columns
 
 class AnimalService {
     val supabase = SupabaseClient().getSupabaseClient()
-    var userId: Int = 0
+    var userId: Int = UserService.getLoggedUserId()
     var resultOfInsert = Animal("",0)
 
     suspend fun addAnimal(animal: Animal): Boolean {
@@ -30,7 +31,6 @@ class AnimalService {
 
     suspend fun addAnimalIdToAssociationTable() {
         try {
-            userId = UserService.getLoggedUserId()
             supabase.from("user_animal").insert(
                 mapOf(
                     "userId" to userId,
@@ -45,8 +45,6 @@ class AnimalService {
     suspend fun getAllByUserId(): List<Animal> {
         var usersAnimals: List<Animal> = emptyList()
         try {
-            val userId = UserService.getLoggedUserId()
-
             val usersAnimalsId = supabase.from("user_animal")
                 .select(columns = Columns.list("animalId")) {
                     filter {
@@ -66,5 +64,34 @@ class AnimalService {
             Log.e("AnimalService", "Fetching user's animals error ${e.message}")
         }
         return usersAnimals
+    }
+
+    suspend fun updateAnimal(animal: Animal) {
+        try {
+            supabase.from("animal").update(
+                {
+                    set("species", animal.species)
+                    set("numberOfAnimals", animal.numberOfAnimals)
+                }
+            ) {
+                filter {
+                    eq("animalId", animal.animalId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AnimalService", "Updating animal data error ${e.message}")
+        }
+    }
+
+    suspend fun deleteAnimal(animal: Animal) {
+        try {
+            supabase.from("animal").delete {
+                filter {
+                    eq("animalId", animal.animalId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AnimalService", "Deleting animal error ${e.message}")
+        }
     }
 }

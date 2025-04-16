@@ -1,6 +1,5 @@
 package com.example.mrolnik.screen
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,17 +10,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import com.example.mrolnik.R
-import com.example.mrolnik.model.Animal
 import com.example.mrolnik.model.Orchard
-import com.example.mrolnik.model.Warehouse
 import com.example.mrolnik.service.OrchardService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+var orchardService = OrchardService()
 
 @Composable
 fun OrchardManagementScreen(navController: NavController) {
@@ -30,7 +28,6 @@ fun OrchardManagementScreen(navController: NavController) {
     var orchardName by remember { mutableStateOf("") }
     var orchardFruitTrees by remember { mutableStateOf(mapOf<String, List<String>>()) }
     var orchard: Orchard
-    var orchardService = OrchardService()
     var orchards by remember { mutableStateOf(emptyList<Orchard>()) }
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
     val addIcon = painterResource(id = R.drawable.baseline_add)
@@ -138,12 +135,15 @@ fun OrchardManagementScreen(navController: NavController) {
 //        }
     }
 }
+
+data class orchardInputField(val label: String, val value: String)
+
 @Composable
 fun OrchardRow(orchard:Orchard) {
     var showDialog by remember { mutableStateOf(false) }
 
     val inputFields = listOf(
-        warehouseInputField("Nazwa", orchard.orchardName),
+        orchardInputField("Nazwa", orchard.orchardName),
     )
 
     var inputFieldValues by remember { mutableStateOf(inputFields.associateWith { it.value }) }
@@ -175,7 +175,12 @@ fun OrchardRow(orchard:Orchard) {
                 )
             }
             Button(
-                onClick = { /* TODO: Handle delete */ },
+                onClick = {
+                    // TODO odswiezyc liste sadów po usunięciu
+                    CoroutineScope(Dispatchers.IO).launch {
+                        orchardService.deleteOrchard(orchard)
+                    }
+                },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 Icon(
@@ -201,10 +206,21 @@ fun OrchardRow(orchard:Orchard) {
                 onDismiss = { showDialog = false },
                 title = "Edytuj: ${orchard.orchardName}",
                 onConfirm = {
-                    // TODO: zrobić edycje w bazie danych :> kolejność pól powinna być w zmiennej inputFields a nowe dane w inputFieldValues oraz odpowiednio zrzutować na typ
-                    inputFieldValues.forEach { (key, value) ->
-                        println(value)
+                    // TODO przy debugowaniu wszystko jest dobrze, po odpaleniu aplpikacji wyrzuca błąd
+                    //  po wpisaniu pustego znaku
+                    var newOrchardName = ""
+                    if (orchard.orchardName.isNotBlank()) {
+                        newOrchardName =
+                            inputFieldValues.getValue(orchardInputField("Nazwa", orchard.orchardName))
                     }
+                    if (newOrchardName.isNotBlank()) {
+                        orchard.orchardName = newOrchardName
+                    }
+                    CoroutineScope(Dispatchers.IO).launch {
+                        orchardService.updateOrchard(orchard)
+                    }
+
+                    // TODO wyswietlic informacje dla uzytkownika o blednym wpisaniu nazwy
                     showDialog = false
                 },
                 content = {
