@@ -54,7 +54,7 @@ fun HomeScreen() {
             OrchardManagementScreen(navController)
         }
         composable("planner") {
-            PlannerScreen()
+            PlannerScreen(navController)
         }
         composable("vehicle") {
             VehicleManagementScreen(navController)

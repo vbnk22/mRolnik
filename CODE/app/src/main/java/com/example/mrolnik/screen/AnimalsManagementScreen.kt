@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
@@ -35,23 +36,27 @@ fun AnimalsManagementScreen(navController: NavController) {
 
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(bottom = 8.dp)
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
                 Icon(
                     painter = backIcon,
                     contentDescription = "Wróć",
                     modifier = Modifier.size(24.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+
             Text(
                 text = "Zarządzanie zwierzętami",
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.align(Alignment.Center),
+                textAlign = TextAlign.Center
             )
         }
         Button(onClick = { showForm = true }) {

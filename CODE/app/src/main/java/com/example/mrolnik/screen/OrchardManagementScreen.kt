@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
@@ -36,23 +37,27 @@ fun OrchardManagementScreen(navController: NavController) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
 
         if (selectedOrchard == null) {//TODO: nie wiem po co to, warto przemyślec czy to potrzebne, else do tego jest zakomentowany
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(bottom = 8.dp)
             ) {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
                     Icon(
                         painter = backIcon,
                         contentDescription = "Wróć",
                         modifier = Modifier.size(24.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+
                 Text(
                     text = "Zarządzanie sadami",
-                    style = MaterialTheme.typography.headlineSmall
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.align(Alignment.Center),
+                    textAlign = TextAlign.Center
                 )
             }
             Button(
