@@ -74,3 +74,39 @@ fun CustomModalDialog(
         }
     }
 }
+@Composable
+fun InfoModalDialog(
+    onDismiss: () -> Unit,
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 8.dp,
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(text = title, style = MaterialTheme.typography.titleLarge)
+
+                content()
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(onClick = onDismiss) {
+                        Text("OK")
+                    }
+                }
+            }
+        }
+    }
+}
