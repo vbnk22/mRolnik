@@ -4,6 +4,7 @@ import com.example.mrolnik.model.User
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import com.example.mrolnik.config.SupabaseClient
+import com.example.mrolnik.model.Planner
 import io.github.jan.supabase.postgrest.from
 
 class UserService {
@@ -11,9 +12,18 @@ class UserService {
 
     companion object {
         private var user: User = User()
-            fun getLoggedUserId(): Int {
-                return user.userId
-            }
+
+        fun getLoggedUserId(): Int {
+            return user.userId
+        }
+
+        fun getLoggedUserPlannerId(): Int {
+            return user.plannerId
+        }
+
+        fun setLoggedUser(u: User) {
+            user = u
+        }
     }
 
     suspend fun loginUser(login: MutableState<String>, password: MutableState<String>): User? {
@@ -28,7 +38,7 @@ class UserService {
                 }
                 .decodeList<User>()
             if (!result.isNullOrEmpty()) {
-                user = result[0]
+                setLoggedUser(result[0])
                 return user
             }
         } catch (e: Exception) {
@@ -54,8 +64,25 @@ class UserService {
                 )
             return true
         } catch (e: Exception) {
-            Log.e("UserService", "Register error")
+            Log.e("UserService", "Register error ${e.message}")
             return false
+        }
+    }
+
+    suspend fun updateUserPlannerId(planner: Planner) {
+        val userId = UserService.getLoggedUserId()
+        try {
+            supabase.from("user").update(
+                {
+                    set("plannerId", planner.plannerId)
+                }
+            ) {
+                filter {
+                    eq("userId", userId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PlannerService", "Updating user's plannerId error: ${e.message}")
         }
     }
 }

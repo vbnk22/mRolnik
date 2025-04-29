@@ -25,7 +25,7 @@ var animalService = AnimalService()
 @Composable
 fun AnimalsManagementScreen(navController: NavController) {
     var showForm by remember { mutableStateOf(false) }
-    var newAnimal by remember { mutableStateOf("") }
+    var newAnimalName by remember { mutableStateOf("") }
     var newAnimalCount by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     var animal: Animal
@@ -69,8 +69,8 @@ fun AnimalsManagementScreen(navController: NavController) {
 
         if (showForm) {
             OutlinedTextField(
-                value = newAnimal,
-                onValueChange = { newAnimal = it },
+                value = newAnimalName,
+                onValueChange = { newAnimalName = it },
                 label = { Text("Nazwa zwierzęcia") },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             )
@@ -83,15 +83,15 @@ fun AnimalsManagementScreen(navController: NavController) {
             Button(
                 onClick = {
                     CoroutineScope(Dispatchers.IO).launch {
-                        if (newAnimal.isNotBlank() && newAnimalCount.isNotBlank()) {
-                            animal = Animal(newAnimal,newAnimalCount.toInt())
+                        if (newAnimalName.isNotBlank() && newAnimalCount.isNotBlank()) {
+                            animal = Animal(newAnimalName, newAnimalCount.toInt())
                             animalService.addAnimal(animal)
                             animalService.addAnimalIdToAssociationTable()
                             val fetchedAnimals = withContext(Dispatchers.IO) {
                                 animalService.getAllByUserId()
                             }
                             animals = fetchedAnimals
-                            newAnimal = ""
+                            newAnimalName = ""
                             newAnimalCount = ""
                             showForm = false
                         }
