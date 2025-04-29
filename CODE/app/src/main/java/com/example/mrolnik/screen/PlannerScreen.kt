@@ -2,7 +2,7 @@ package com.example.mrolnik.screen
 
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
-import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,6 +22,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
+import com.example.mrolnik.model.Planner
+import com.example.mrolnik.service.PlannerService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -56,6 +62,15 @@ fun PlannerScreen(navController: NavController) {
     val addIcon = painterResource(R.drawable.baseline_add)
 
     val context = LocalContext.current
+
+    val plannerService = PlannerService()
+    var planner by remember { mutableStateOf<Planner?>(null) }
+
+    LaunchedEffect(Unit) {
+        planner = plannerService.createOrReturnPlanner()
+    }
+
+    Log.i("PlannerScreen", "PlannerId: ${planner?.plannerId}, ${planner?.createDate}")
 
     fun onEditTask(name: String, date: String, description: String) {
         editTaskName = name
