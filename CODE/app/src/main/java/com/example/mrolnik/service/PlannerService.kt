@@ -1,9 +1,11 @@
 package com.example.mrolnik.service
 
+import Task
 import android.annotation.SuppressLint
 import android.util.Log
 import com.example.mrolnik.config.SupabaseClient
 import com.example.mrolnik.model.Planner
+
 import io.github.jan.supabase.postgrest.from
 
 class PlannerService {
@@ -50,4 +52,14 @@ class PlannerService {
         }
         return null
     }
+
+    suspend fun getTasksForDate(plannerId: String, date: String): List<Task> {
+        return supabase.from("task").select{
+            filter {
+                eq("plannerId", plannerId)
+                eq("realizeDate", date)
+            }
+        }.decodeList<Task>()
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.example.mrolnik.screen
 
+import Task
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.util.Log
@@ -24,12 +25,14 @@ import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.Planner
 import com.example.mrolnik.service.PlannerService
+import com.example.mrolnik.service.TaskService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.*
 
@@ -66,8 +69,25 @@ fun PlannerScreen(navController: NavController) {
     val plannerService = PlannerService()
     var planner by remember { mutableStateOf<Planner?>(null) }
 
+    val taskService = TaskService()
+    var taskList by remember { mutableStateOf<List<Task>>(emptyList()) }
+    var editingTask by remember { mutableStateOf<Task?>(null) }
+
+    // Add this LaunchedEffect to initialize the planner
     LaunchedEffect(Unit) {
         planner = plannerService.createOrReturnPlanner()
+        Log.i("PlannerScreen", "Initialized planner: ${planner?.plannerId}, ${planner?.createDate}")
+    }
+
+    LaunchedEffect(selectedDate, planner?.plannerId) {
+        if (planner != null) {
+            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val formattedDate = selectedDate.format(dateFormatter)
+            planner?.plannerId?.let { pid ->
+                taskList = taskService.getTasksByDate(pid, formattedDate)
+                Log.d("TaskService", "Fetched ${taskList.size} tasks for plannerId=${pid}, date=$formattedDate")
+            }
+        }
     }
 
     Log.i("PlannerScreen", "PlannerId: ${planner?.plannerId}, ${planner?.createDate}")
@@ -151,10 +171,31 @@ fun PlannerScreen(navController: NavController) {
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
                 TaskList(
-                    date = date,
-                    onEditTask = { name, dateStr, desc -> onEditTask(name, dateStr, desc) },
-                    onInfoTask = { name, dateStr, desc -> onInfoTask(name, dateStr, desc) }
+                    tasks = taskList,
+                    onEditTask = { task ->
+                        editTaskName = task.taskName
+                        editTaskDate = task.realizeDate
+                        editTaskDescription = task.description
+                        editingTask = task
+                        showEditDialog = true
+                    },
+                    onInfoTask = { task ->
+                        infoTaskName = task.taskName
+                        infoTaskDate = task.realizeDate
+                        infoTaskDescription = task.description
+                        showInfoDialog = true
+                    },
+                    onDeleteTask = { task ->
+                        CoroutineScope(Dispatchers.IO).launch {
+                            taskService.deleteTask(task)
+                            withContext(Dispatchers.Main) {
+                                taskList = taskList.filterNot { it.taskId == task.taskId }
+                            }
+                        }
+                    }
                 )
+
+
             }
         }
 
@@ -192,12 +233,29 @@ fun PlannerScreen(navController: NavController) {
                 onDismiss = { showAddDialog = false },
                 title = "Nowe zadanie",
                 onConfirm = {
-                    showAddDialog = false
-                    taskName = ""
-                    taskDate = ""
-                    taskDescription = ""
-                    taskText = ""
+                    planner?.let {
+                        val newTask = Task(
+                            taskId = 0,
+                            taskName = taskName,
+                            realizeDate = taskDate,
+                            description = taskDescription,
+                            plannerId = it.plannerId
+                        )
+                        CoroutineScope(Dispatchers.IO).launch {
+                            taskService.addTask(newTask)
+                            val refreshed = taskService.getTasksByDate(it.plannerId, selectedDate.toString())
+                            withContext(Dispatchers.Main) {
+                                taskList = refreshed
+                                showAddDialog = false
+                                taskName = ""
+                                taskDate = ""
+                                taskDescription = ""
+                                taskText = ""
+                            }
+                        }
+                    }
                 }
+
 
             ) {
                 Column {
@@ -261,9 +319,23 @@ fun PlannerScreen(navController: NavController) {
                 onDismiss = { showEditDialog = false },
                 title = "Edytuj zadanie",
                 onConfirm = {
-                    // Tutaj zapis edycji
-                    showEditDialog = false
+                    editingTask?.let {
+                        val updated = it.copy(
+                            taskName = editTaskName,
+                            realizeDate = editTaskDate,
+                            description = editTaskDescription
+                        )
+                        CoroutineScope(Dispatchers.IO).launch {
+                            taskService.updateTask(updated)
+                            val refreshed = taskService.getTasksByDate(updated.plannerId, selectedDate.toString())
+                            withContext(Dispatchers.Main) {
+                                taskList = refreshed
+                                showEditDialog = false
+                            }
+                        }
+                    }
                 }
+
             ) {
                 Column {
                     OutlinedTextField(
@@ -415,18 +487,11 @@ fun DaysOfMonth(
 @SuppressLint("NewApi")
 @Composable
 fun TaskList(
-    date: LocalDate,
-    onEditTask: (String, String, String) -> Unit,
-    onInfoTask: (String, String, String) -> Unit
+    tasks: List<Task>,
+    onEditTask: (Task) -> Unit,
+    onInfoTask: (Task) -> Unit,
+    onDeleteTask: (Task) -> Unit
 ) {
-    // Przykładowe zadania jako Triple(nazwa, data, opis)
-    val tasks = listOf(
-        Triple("Spotkanie o 10:00", "2025-04-27", "Opis spotkania"),
-        Triple("Zakupy spożywcze", "2025-04-27", "Kup mleko i chleb"),
-        Triple("Trening o 18:00", "2025-04-27", "Bieg 5 km"),
-        Triple("Napisanie raportu", "2025-04-27", "Raport z projektu")
-    ).filterIndexed { index, _ -> (date.dayOfMonth + index) % 2 == 0 }
-
     val editIcon = painterResource(id = R.drawable.baseline_edit)
     val deleteIcon = painterResource(id = R.drawable.baseline_delete)
     val infoIcon = painterResource(id = R.drawable.baseline_info)
@@ -449,40 +514,19 @@ fun TaskList(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = task.first,
+                            text = task.taskName,
                             fontSize = 16.sp,
                             modifier = Modifier.weight(1f)
                         )
 
-                        Button(
-                            onClick = { onEditTask(task.first, task.second, task.third) },
-                            modifier = Modifier.padding(start = 8.dp)
-                        ) {
-                            Icon(
-                                painter = editIcon,
-                                contentDescription = "EDIT",
-                                modifier = Modifier.size(18.dp)
-                            )
+                        IconButton(onClick = { onEditTask(task) }) {
+                            Icon(painter = editIcon, contentDescription = "EDIT")
                         }
-                        Button(
-                            onClick = { /* TODO: Obsługa usuwania  */ },
-                            modifier = Modifier.padding(start = 4.dp)
-                        ) {
-                            Icon(
-                                painter = deleteIcon,
-                                contentDescription = "DELETE",
-                                modifier = Modifier.size(18.dp)
-                            )
+                        IconButton(onClick = { onDeleteTask(task) }) {
+                            Icon(painter = deleteIcon, contentDescription = "DELETE")
                         }
-                        Button(
-                            onClick = { onInfoTask(task.first, task.second, task.third) },
-                            modifier = Modifier.padding(start = 4.dp)
-                        ) {
-                            Icon(
-                                painter = infoIcon,
-                                contentDescription = "INFO",
-                                modifier = Modifier.size(18.dp)
-                            )
+                        IconButton(onClick = { onInfoTask(task) }) {
+                            Icon(painter = infoIcon, contentDescription = "INFO")
                         }
                     }
                 }
@@ -490,3 +534,4 @@ fun TaskList(
         }
     }
 }
+
