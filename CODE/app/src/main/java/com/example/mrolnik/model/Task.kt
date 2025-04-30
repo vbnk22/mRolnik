@@ -1,10 +1,10 @@
-package com.example.mrolnik.model
+import kotlinx.serialization.Serializable
 
-import java.util.Date
-
+@Serializable
 data class Task(
-    val taskId: Int?,
-    val taskName: String?,
-    val realizeDate: Date?,
-    var description: String = ""
+    val taskId: Int? = null,
+    val taskName: String,
+    val realizeDate: String,
+    val description: String = "",
+    val plannerId: Int
 )

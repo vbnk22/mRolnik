@@ -72,15 +72,18 @@ class UserService {
     suspend fun updateUserPlannerId(planner: Planner) {
         val userId = UserService.getLoggedUserId()
         try {
-            supabase.from("user").update(
+            val user = supabase.from("user").update(
                 {
                     set("plannerId", planner.plannerId)
                 }
             ) {
+                select()
                 filter {
                     eq("userId", userId)
                 }
             }
+                .decodeSingle<User>()
+            setLoggedUser(user)
         } catch (e: Exception) {
             Log.e("PlannerService", "Updating user's plannerId error: ${e.message}")
         }
