@@ -68,6 +68,12 @@ fun HomeScreen() {
         composable("resources") {
             ResourcesManagementScreen(navController)
         }
+        composable("vehicleInformation") {
+            VehicleInformationScreen(navController)
+        }
+        composable("vehicleRepairs") {
+            VehicleRepairHistoryScreen(navController)
+        }
     }
 }
 

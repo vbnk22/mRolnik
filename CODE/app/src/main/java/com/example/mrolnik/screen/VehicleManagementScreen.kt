@@ -15,6 +15,7 @@ import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.Vehicle
 import com.example.mrolnik.service.VehicleService
+import com.example.mrolnik.viewmodel.LocalSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,7 +35,7 @@ fun VehicleManagementScreen(navController: NavController) {
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Górny pasek z przyciskiem cofania
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -113,7 +114,7 @@ fun VehicleManagementScreen(navController: NavController) {
         LazyColumn {
             if (vehicles.isNotEmpty()) {
                 items(vehicles) { vehicle ->
-                    VehicleRow(vehicle)
+                    VehicleRow(vehicle, navController)
 //                    Text(
 //                        text = "${vehicle.vehicleName} - ${vehicle.technicalCondition}",
 //                        modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -137,8 +138,10 @@ fun VehicleManagementScreen(navController: NavController) {
 data class vehicleInputField(val label: String, val value: String)
 
 @Composable
-fun VehicleRow(vehicle: Vehicle) {
+fun VehicleRow(vehicle: Vehicle, navController: NavController) {
+    val sharedViewModel = LocalSharedViewModel.current
     var showDialog by remember { mutableStateOf(false) }
+    var showDetails by remember { mutableStateOf(false) }
 
     // Lista pól, które chcemy edytować, oparta na obiekcie Animal
     val inputFields = listOf(
@@ -190,7 +193,7 @@ fun VehicleRow(vehicle: Vehicle) {
                 )
             }
             Button(
-                onClick = { /* TODO: Przejscie do zasobów w magazynie */ },
+                onClick = { showDetails = !showDetails },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 Icon(
@@ -198,6 +201,30 @@ fun VehicleRow(vehicle: Vehicle) {
                     contentDescription = "INFO",
                     modifier = Modifier.size(24.dp)
                 )
+            }
+        }
+
+        if (showDetails) {
+            Column(modifier = Modifier.padding(start = 16.dp, top = 4.dp)) {
+                Button(
+                    onClick = {
+                        sharedViewModel.selectVehicle(vehicle)
+                        navController.navigate("vehicleInformation")
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Text("Szczegółwe informacje")
+                }
+
+                Button(
+                    onClick = {
+                        sharedViewModel.selectVehicle(vehicle)
+                        navController.navigate("vehicleRepairs")
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Text("Historia napraw")
+                }
             }
         }
 
