@@ -15,6 +15,7 @@ import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.Orchard
 import com.example.mrolnik.service.OrchardService
+import com.example.mrolnik.viewmodel.LocalSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -112,7 +113,7 @@ fun OrchardManagementScreen(navController: NavController) {
             LazyColumn {
                 if (orchards.isNotEmpty()) {
                     items(orchards) { orchard ->
-                        OrchardRow(orchard)
+                        OrchardRow(orchard, navController)
                     }
                 } else {
                     //TODO: handle empty
@@ -144,12 +145,13 @@ fun OrchardManagementScreen(navController: NavController) {
 data class orchardInputField(val label: String, val value: String)
 
 @Composable
-fun OrchardRow(orchard:Orchard) {
+fun OrchardRow(orchard:Orchard, navController: NavController) {
     var showDialog by remember { mutableStateOf(false) }
 
     val inputFields = listOf(
         orchardInputField("Nazwa", orchard.orchardName),
     )
+    val sharedViewModel = LocalSharedViewModel.current
 
     var inputFieldValues by remember { mutableStateOf(inputFields.associateWith { it.value }) }
     val editIcon = painterResource(id = R.drawable.baseline_edit)
@@ -195,7 +197,8 @@ fun OrchardRow(orchard:Orchard) {
                 )
             }
             Button(
-                onClick = { /* TODO: Przejscie do zasobów w magazynie */ },
+                onClick = { sharedViewModel.selectOrchard(orchard)
+                    navController.navigate("fruitTrees")},
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 Icon(
@@ -252,84 +255,3 @@ fun OrchardRow(orchard:Orchard) {
 fun ListIsEmpty(){
     Text("Nie masz jeszcze żadnych pól")
 }
-    //@Composable
-//fun OrchardDetailScreen(orchardName: String, resources: List<String>, onAddFruitTree: (String) -> Unit, onBack: () -> Unit) {
-//    var showFruitTreeForm by remember { mutableStateOf(false) }
-//
-//    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-//        Text("Orchard: $orchardName", style = MaterialTheme.typography.headlineSmall)
-//
-//        Spacer(modifier = Modifier.height(16.dp))
-//        Text("Fruit Trees in this orchard:", style = MaterialTheme.typography.bodyLarge)
-//        Column {
-//            resources.forEach { resource ->
-//                Text(text = resource, modifier = Modifier.padding(4.dp))
-//            }
-//        }
-//
-//        Button(
-//            onClick = { showFruitTreeForm = !showFruitTreeForm },
-//            modifier = Modifier.padding(top = 8.dp)
-//        ) {
-//            Text(if (showFruitTreeForm) "Hide Tree Form" else "Add Fruit Tree")
-//        }
-//
-//        if (showFruitTreeForm) {
-//            FruitTreeForm(onAddFruitTree)
-//        }
-//
-//        Button(
-//            onClick = onBack,
-//            modifier = Modifier.padding(top = 8.dp)
-//        ) {
-//            Text("Back to Orchards")
-//        }
-//    }
-//}
-
-//@Composable
-//fun FruitTreeForm(onAddFruitTree: (String) -> Unit) {
-//    var plantName by remember { mutableStateOf("") }
-//    var harvestDate by remember { mutableStateOf("") }
-//    var sprayingQty by remember { mutableStateOf("") }
-//
-//    Column(modifier = Modifier.padding(16.dp)) {
-//        OutlinedTextField(
-//            value = plantName,
-//            onValueChange = { plantName = it },
-//            label = { Text("Plant Name") },
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//        OutlinedTextField(
-//            value = harvestDate,
-//            onValueChange = { harvestDate = it },
-//            label = { Text("Planned Harvest Date") },
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//        OutlinedTextField(
-//            value = sprayingQty,
-//            onValueChange = { sprayingQty = it },
-//            label = { Text("Used Spraying Quantity") },
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//        Button(
-//            onClick = {
-//                if (plantName.isNotBlank() && harvestDate.isNotBlank() && sprayingQty.isNotBlank()) {
-//                    onAddFruitTree("$plantName - $harvestDate - $sprayingQty L")
-//                    plantName = ""
-//                    harvestDate = ""
-//                    sprayingQty = ""
-//                }
-//            },
-//            modifier = Modifier.padding(top = 8.dp)
-//        ) {
-//            Text("Save Tree Data")
-//        }
-//    }
-
-
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewOrchardManagement() {
-//    OrchardManagementScreen(navController )
-//}

@@ -36,51 +36,54 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
+import com.example.mrolnik.model.FruitTree
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
 
-data class repairInputField(val label: String, val value: String)
-
-data class Repair(
-    val name: String,
-    val date: String,
-    val cost: Double,
-    val description: String
+data class Spraying (
+    val sprayingDate: String,
+    val sprayingName: String,
+    val sprayingQuantity: Double
 )
 
+data class sprayingInputField(val label: String, val value: String)
+
 @Composable
-fun VehicleRepairHistoryScreen(navController: NavController) {
-    val sharedVehicleViewModel = LocalSharedViewModel.current
-    val vehicleState = sharedVehicleViewModel.selectedWarehouse.collectAsState()
-    val currentVehicle = vehicleState.value
+fun SprayingHistoryScreen(navController: NavController) {
+    val sharedFruitTreeViewModel = LocalSharedViewModel.current
+    val fruitTreeState = sharedFruitTreeViewModel.selectedFruitTree.collectAsState()
+    val currentFruitTree = fruitTreeState.value
 
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
     val addIcon = painterResource(id = R.drawable.baseline_add)
 
-    var showAddRepairDialog by remember { mutableStateOf(false) }
+    var expandedIndex by remember { mutableStateOf<Int?>(null) }
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
-    val repairsInputField = listOf(
-        repairInputField("Nazwa", ""),
-        repairInputField("Opis", ""),
-        repairInputField("Koszt", ""),
-        repairInputField("Data naprawy", "")
-    )
+    var showAddSprayingDialog by remember { mutableStateOf(false) }
 
-    // TODO: Lista z wartościami
-    var inputRepairsFieldValues by remember { mutableStateOf(repairsInputField.associateWith { it.value }) }
-    val repairs by remember {
+
+    val sprayings by remember {
         mutableStateOf(
             listOf(
-                Repair("Wymiana oleju", "2024-02-15", 250.0, "Wymiana oleju silnikowego oraz filtrów."),
-                Repair("Wymiana opon", "2023-10-05", 800.0, "Zamiana opon letnich na zimowe, zbalansowanie kół."),
-                Repair("Naprawa hamulców", "2023-08-19", 500.0, "Wymiana klocków hamulcowych na przedniej osi."),
+                Spraying("2024-04-10", "Oprysk przeciw mszycom", 1.2),
+                Spraying("2024-04-25", "Fungicyd na parch jabłoni", 1.5),
+                Spraying("2024-05-05", "Nawóz dolistny mikroelementowy", 2.0),
+                Spraying("2024-05-20", "Oprysk przeciw grzybom", 1.8),
+                Spraying("2024-06-01", "Środek na zwójkę liściową", 1.3)
             )
         )
     }
 
-    var expandedIndex by remember { mutableStateOf<Int?>(null) }
+    // TODO: LISTA inputFieldów dla dodawania zasobu
+    val sprayingsInputField = listOf(
+        sprayingInputField("Nazwa oprysku", ""),
+        sprayingInputField("Data oprysku", ""),
+        sprayingInputField("Jakość oprysków", ""),
+    )
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    // TODO: Lista z wartościami
+    var inputSprayingsFieldValues by remember { mutableStateOf(sprayingsInputField.associateWith { it.value }) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)){
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -98,7 +101,7 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
             }
 
             Text(
-                text = "Historia napraw",
+                text = "Historia Oprysków dla ${currentFruitTree?.plantName}",
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.align(Alignment.Center),
                 textAlign = TextAlign.Center
@@ -107,7 +110,7 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
         }
 
         Button(
-            onClick = { showAddRepairDialog = true },
+            onClick = { showAddSprayingDialog = true },
             modifier = Modifier.padding(start = 8.dp)
         ) {
             Icon(
@@ -117,38 +120,44 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+
 
         LaunchedEffect(Unit) {
-            //TODO: Fetchowanie danych od naprawach jak zawsze wszystko robie na sztywnych danych
+            //TODO: Fetchowanie danych o opryskach
         }
 
         LazyColumn {
-            items(repairs) { repair ->
-                RepairItem(
-                    repair = repair,
-                    isExpanded = expandedIndex == repairs.indexOf(repair),
+
+            items(sprayings) { spraying ->
+                SprayingItem(
+                    spraying = spraying,
+                    isExpanded = expandedIndex == sprayings.indexOf(spraying),
                     onClick = {
-                        expandedIndex = if (expandedIndex == repairs.indexOf(repair)) null else repairs.indexOf(repair)
-                    }
+                        expandedIndex =
+                            if (expandedIndex == sprayings.indexOf(spraying)) null else sprayings.indexOf(
+                                spraying
+                            )
+                    },
                 )
             }
         }
 
-        if(showAddRepairDialog){
+
+
+        if(showAddSprayingDialog){
             CustomModalDialog(
-                onDismiss = { showAddRepairDialog = false },
+                onDismiss = { showAddSprayingDialog = false },
                 title = "Dodaj naprawę",
                 onConfirm = {
                     // TODO: zrobić dodawanie naprawy możesz użyć currentVehicle.vehicleId
                     // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
                 },
                 content = {
-                    repairsInputField.forEach { inputField ->
+                    sprayingsInputField.forEach { inputField ->
                         TextField(
-                            value = inputRepairsFieldValues[inputField] ?: "",
+                            value = inputSprayingsFieldValues[inputField] ?: "",
                             onValueChange = { newValue ->
-                                inputRepairsFieldValues = inputRepairsFieldValues.toMutableMap().apply {
+                                inputSprayingsFieldValues = inputSprayingsFieldValues.toMutableMap().apply {
                                     this[inputField] = newValue
                                 }
                             },
@@ -164,25 +173,25 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
     }
 }
 
+
 @Composable
-fun RepairItem(
-    repair: Repair,
+fun SprayingItem(
+    spraying: Spraying,
     isExpanded: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    var showEditRepairDialog by remember { mutableStateOf(false) }
+    var showEditSprayingDialog by remember { mutableStateOf(false) }
+
 
     // TODO: LISTA inputFieldów dla dodawania zasobu
-    val repairsInputField = listOf(
-        repairInputField("Nazwa", repair.name),
-        repairInputField("Opis", repair.description),
-        repairInputField("Koszt", repair.cost.toString()),
-        repairInputField("Data naprawy", repair.date)
+    val sprayingsInputField = listOf(
+        sprayingInputField("Nazwa oprysku", spraying.sprayingName),
+        sprayingInputField("Data oprysku", spraying.sprayingDate),
+        sprayingInputField("Jakość oprysków", spraying.sprayingQuantity.toString()),
     )
 
     // TODO: Lista z wartościami
-    var inputRepairsFieldValues by remember { mutableStateOf(repairsInputField.associateWith { it.value }) }
-
+    var inputSprayingsFieldValues by remember { mutableStateOf(sprayingsInputField.associateWith { it.value }) }
 
     Card(
         modifier = Modifier
@@ -195,7 +204,7 @@ fun RepairItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = repair.name,
+                    text = spraying.sprayingName,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -207,50 +216,51 @@ fun RepairItem(
 
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Data naprawy: ${repair.date}")
-                Text("Koszt: ${repair.cost} PLN")
-                Text("Opis: ${repair.description}")
+                Text("Nazwa oprysku: ${spraying.sprayingName}")
+                Text("Data oprysku: ${spraying.sprayingDate}")
+                Text("Jakość oprysku: ${spraying.sprayingQuantity}")
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { showEditRepairDialog = true}) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Button(onClick = { showEditSprayingDialog = true }) {
                         Text("Edytuj")
                     }
-                    Button(onClick = {
-                    //TODO: zaimplementuj usuwanie
-                    }) {
+
+                    Button(onClick = { /* TODO: Logika usuwania */ }) {
                         Text("Usuń")
                     }
                 }
+            }
+            if (showEditSprayingDialog) {
+                CustomModalDialog(
+                    onDismiss = { showEditSprayingDialog = false },
+                    title = "Edytuj: ${spraying.sprayingName}",
+                    onConfirm = {
+                        // TODO implementacja edycji danych
 
-                if (showEditRepairDialog) {
-                    CustomModalDialog(
-                        onDismiss = { showEditRepairDialog = false },
-                        title = "Edytuj: ${repair.name}",
-                        onConfirm = {
-                            // TODO implementacja edycji danych
-
-                            showEditRepairDialog = false
-                        },
-                        content = {
-                            repairsInputField.forEach { inputField ->
-                                TextField(
-                                    value = inputRepairsFieldValues[inputField] ?: "",
-                                    onValueChange = { newValue ->
-                                        inputRepairsFieldValues = inputRepairsFieldValues.toMutableMap().apply {
-                                            this[inputField] = newValue
-                                        }
-                                    },
-                                    label = { Text(inputField.label) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    placeholder = { Text("Wpisz ${inputField.label}") }
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
+                        showEditSprayingDialog = false },
+                    content = {
+                        sprayingsInputField.forEach { inputField ->
+                            TextField(
+                                value = inputSprayingsFieldValues[inputField] ?: "",
+                                onValueChange = { newValue ->
+                                    inputSprayingsFieldValues = inputSprayingsFieldValues.toMutableMap().apply {
+                                        this[inputField] = newValue
+                                    } },
+                                label = { Text(inputField.label) },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("Wpisz ${inputField.label}") }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
-                    )
-                }
+                    }
+                )
             }
         }
     }

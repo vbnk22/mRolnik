@@ -74,6 +74,12 @@ fun HomeScreen() {
         composable("vehicleRepairs") {
             VehicleRepairHistoryScreen(navController)
         }
+        composable("fruitTrees") {
+            FruitTreesScreen(navController)
+        }
+        composable("sprayingHistory") {
+            SprayingHistoryScreen(navController)
+        }
     }
 }
 
