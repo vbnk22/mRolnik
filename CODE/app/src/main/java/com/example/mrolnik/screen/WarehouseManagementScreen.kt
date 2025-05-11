@@ -27,6 +27,7 @@ import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.service.WarehouseService
 import com.example.mrolnik.model.Warehouse
+import com.example.mrolnik.viewmodel.LocalSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,10 +37,10 @@ var warehouseService = WarehouseService()
 
 @Composable
 fun WarehouseManagementScreen(navController: NavController) {
+
     var showForm by remember { mutableStateOf(false) }
     var selectedWarehouse by remember { mutableStateOf<String?>(null) }
     var warehouseName by remember { mutableStateOf("") }
-    var warehouseResources by remember { mutableStateOf(mapOf<String, List<String>>()) }
     var warehouses by remember { mutableStateOf(emptyList<Warehouse>()) }
 
     var newWarehouse by remember { mutableStateOf("") }
@@ -127,7 +128,7 @@ fun WarehouseManagementScreen(navController: NavController) {
             LazyColumn {
                 if (warehouses.isNotEmpty()) {
                     items(warehouses) { warehouse ->
-                        WarehouseRow(warehouse)
+                        WarehouseRow(warehouse, navController)
                     }
                 } else {
                     //TODO: handle empty
@@ -142,25 +143,14 @@ fun WarehouseManagementScreen(navController: NavController) {
                 }
             }
         }
-//        else {
-//            WarehouseDetailScreen(
-//                warehouseName = selectedWarehouse!!,
-//                resources = warehouseResources[selectedWarehouse] ?: listOf(),
-//                onAddResource = { resource ->
-//                    warehouseResources = warehouseResources.toMutableMap().apply {
-//                        this[selectedWarehouse!!] = (this[selectedWarehouse] ?: listOf()) + resource
-//                    }
-//                },
-//                onBack = { selectedWarehouse = null }
-//            )
-//        }
     }
 }
 
 data class warehouseInputField(val label: String, val value: String)
 
 @Composable
-fun WarehouseRow(warehouse: Warehouse) {
+fun WarehouseRow(warehouse: Warehouse, navController: NavController) {
+    val sharedViewModel = LocalSharedViewModel.current
     var showDialog by remember { mutableStateOf(false) }
 
         val inputFields = listOf(
@@ -211,7 +201,9 @@ fun WarehouseRow(warehouse: Warehouse) {
                 )
             }
             Button(
-                onClick = { /* TODO: Przejscie do zasobów w magazynie */ },
+                onClick = {
+                    sharedViewModel.selectWarehouse(warehouse)
+                    navController.navigate("resources") },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 Icon(
@@ -264,87 +256,3 @@ fun WarehouseRow(warehouse: Warehouse) {
         }
     }
 }
-
-
-//
-//@Composable
-//fun WarehouseDetailScreen(warehouseName: String, resources: List<String>, onAddResource: (String) -> Unit, onBack: () -> Unit) {
-//    var showResourceForm by remember { mutableStateOf(false) }
-//
-//    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-//        Text("Warehouse: $warehouseName", style = MaterialTheme.typography.headlineSmall)
-//
-//        Spacer(modifier = Modifier.height(16.dp))
-//        Text("Resources in this warehouse:", style = MaterialTheme.typography.bodyLarge)
-//        Column {
-//            resources.forEach { resource ->
-//                Text(text = resource, modifier = Modifier.padding(4.dp))
-//            }
-//        }
-//
-//        Button(
-//            onClick = { showResourceForm = !showResourceForm },
-//            modifier = Modifier.padding(top = 8.dp)
-//        ) {
-//            Text(if (showResourceForm) "Hide Resource Form" else "Add Resource")
-//        }
-//
-//        if (showResourceForm) {
-//            ResourceForm(onAddResource)
-//        }
-//
-//        Button(
-//            onClick = onBack,
-//            modifier = Modifier.padding(top = 8.dp)
-//        ) {
-//            Text("Back to Warehouses")
-//        }
-//    }
-//}
-//
-//@Composable
-//fun ResourceForm(onAddResource: (String) -> Unit) {
-//    var resourceName by remember { mutableStateOf("") }
-//    var quantity by remember { mutableStateOf("") }
-//    var unitMeasure by remember { mutableStateOf("") }
-//
-//    Column(modifier = Modifier.padding(16.dp)) {
-//        OutlinedTextField(
-//            value = resourceName,
-//            onValueChange = { resourceName = it },
-//            label = { Text("Resource Name") },
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//        OutlinedTextField(
-//            value = quantity,
-//            onValueChange = { quantity = it },
-//            label = { Text("Quantity") },
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//        OutlinedTextField(
-//            value = unitMeasure,
-//            onValueChange = { unitMeasure = it },
-//            label = { Text("Unit Measure") },
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//        Button(
-//            onClick = {
-//                if (resourceName.isNotBlank() && quantity.isNotBlank() && unitMeasure.isNotBlank()) {
-//                    onAddResource("$resourceName - $quantity $unitMeasure")
-//                    resourceName = ""
-//                    quantity = ""
-//                    unitMeasure = ""
-//                }
-//            },
-//            modifier = Modifier.padding(top = 8.dp)
-//        ) {
-//            Text("Save Resource")
-//        }
-//    }
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewForms() {
-//    WarehouseManagementScreen()
-//}

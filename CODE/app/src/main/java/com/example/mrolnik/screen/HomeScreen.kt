@@ -65,6 +65,9 @@ fun HomeScreen() {
         composable("announcement") {
             AnnouncementScreen()
         }
+        composable("resources") {
+            ResourcesManagementScreen(navController)
+        }
     }
 }
 
