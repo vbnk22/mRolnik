@@ -63,7 +63,7 @@ fun HomeScreen() {
             WarehouseManagementScreen(navController)
         }
         composable("announcement") {
-            AnnouncementScreen()
+            AnnouncementScreen(navController)
         }
         composable("resources") {
             ResourcesManagementScreen(navController)
