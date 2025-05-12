@@ -106,6 +106,7 @@ dependencies {
     // Jetpack Compose Navigation (jeśli planujesz nawigację w Compose)
     implementation("androidx.navigation:navigation-compose:2.5.0")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.material:material-icons-extended:<version>")
 
 
 }

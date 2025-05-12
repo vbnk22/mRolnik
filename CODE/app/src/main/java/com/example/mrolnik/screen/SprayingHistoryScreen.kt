@@ -101,7 +101,7 @@ fun SprayingHistoryScreen(navController: NavController) {
             }
 
             Text(
-                text = "Historia Oprysków dla ${currentFruitTree?.plantName}",
+                text = "Opryski",
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.align(Alignment.Center),
                 textAlign = TextAlign.Center

@@ -1,6 +1,8 @@
 package com.example.mrolnik.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.mrolnik.model.Cultivation
+import com.example.mrolnik.model.Field
 import com.example.mrolnik.model.FruitTree
 import com.example.mrolnik.model.Orchard
 import com.example.mrolnik.model.Vehicle
@@ -21,6 +23,12 @@ class SharedViewModel : ViewModel() {
     private val _selectedFruitTree = MutableStateFlow<FruitTree?>(null)
     val selectedFruitTree: StateFlow<FruitTree?> = _selectedFruitTree
 
+    private val _selectedField = MutableStateFlow<Field?>(null)
+    val selectedField: StateFlow<Field?> = _selectedField
+
+    private val _selectedCultivation = MutableStateFlow<Cultivation?>(null)
+    val selectedCultivation: StateFlow<Cultivation?> = _selectedCultivation
+
     fun selectWarehouse(warehouse: Warehouse) {
         _selectedWarehouse.value = warehouse
     }
@@ -35,5 +43,11 @@ class SharedViewModel : ViewModel() {
 
     fun selectFruitTree(fruitTree: FruitTree) {
         _selectedFruitTree.value = fruitTree
+    }
+    fun selectField(field: Field) {
+        _selectedField.value = field
+    }
+    fun selectCultivation(cultivation: Cultivation) {
+        _selectedCultivation.value = cultivation
     }
 }
