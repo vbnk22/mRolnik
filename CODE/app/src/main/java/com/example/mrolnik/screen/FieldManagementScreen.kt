@@ -20,6 +20,7 @@ import com.example.mrolnik.model.Animal
 import com.example.mrolnik.model.Field
 import com.example.mrolnik.model.Orchard
 import com.example.mrolnik.service.FieldService
+import com.example.mrolnik.viewmodel.LocalSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -118,7 +119,7 @@ fun FieldManagementScreen(navController: NavController) {
             LazyColumn {
                 if (fields.isNotEmpty()) {
                     items(fields) { field ->
-                        FieldRow(field)
+                        FieldRow(field, navController)
                     }
                 } else {
                     //TODO: handle empty
@@ -150,13 +151,13 @@ fun FieldManagementScreen(navController: NavController) {
 data class fieldInputField(val label: String, val value: String)
 
 @Composable
-fun FieldRow(field:Field) {
+fun FieldRow(field:Field, navController: NavController) {
     var showDialog by remember { mutableStateOf(false) }
 
     val inputFields = listOf(
         fieldInputField("Nazwa", field.fieldName),
     )
-
+    val sharedViewModel = LocalSharedViewModel.current
     var inputFieldValues by remember { mutableStateOf(inputFields.associateWith { it.value }) }
     val editIcon = painterResource(id = R.drawable.baseline_edit)
     val deleteIcon = painterResource(id = R.drawable.baseline_delete)
@@ -201,7 +202,8 @@ fun FieldRow(field:Field) {
                 )
             }
             Button(
-                onClick = { /* TODO: Przejscie do zasobów w magazynie */ },
+                onClick = { sharedViewModel.selectField(field)
+                    navController.navigate("cultivations") },
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 Icon(
