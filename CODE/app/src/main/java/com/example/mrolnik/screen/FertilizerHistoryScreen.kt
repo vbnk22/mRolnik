@@ -11,14 +11,14 @@ import com.example.mrolnik.viewmodel.LocalSharedViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.Icons
 //import androidx.compose.material.icons.filled.ExpandLess
 //import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+//import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -28,12 +28,13 @@ data class Fertilizer(
     val quantity: Double
 )
 
+data class fertilizerInputField(val label: String, val value: String)
 
 @Composable
 fun FertilizerHistoryScreen(navController: NavController) {
-    val fieldViewModel = LocalSharedViewModel.current
-    val selectedFieldState = fieldViewModel.selectedField.collectAsState()
-    val currentField = selectedFieldState.value
+    val cultivationViewModel = LocalSharedViewModel.current
+    val selectedCultivationState = cultivationViewModel.selectedCultivation.collectAsState()
+    val currentCultivation = selectedCultivationState.value
 
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
     val addIcon = painterResource(id = R.drawable.baseline_add)
@@ -52,9 +53,9 @@ fun FertilizerHistoryScreen(navController: NavController) {
     }
 
     val fertilizersInputField = listOf(
-        sprayingInputField("Nazwa nawozu", ""),
-        sprayingInputField("Data nawożenia", ""),
-        sprayingInputField("Ilość nawozu (kg)", "")
+        fertilizerInputField("Nazwa nawozu", ""),
+        fertilizerInputField("Data nawożenia", ""),
+        fertilizerInputField("Ilość nawozu", "")
     )
 
     var inputFertilizerFieldValues by remember {
@@ -79,7 +80,7 @@ fun FertilizerHistoryScreen(navController: NavController) {
             }
 
             Text(
-                text = "Nawozy",
+                text = "${currentCultivation?.plantName}",
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.align(Alignment.Center),
                 textAlign = TextAlign.Center
@@ -145,9 +146,9 @@ fun FertilizerItem(
     var showEditDialog by remember { mutableStateOf(false) }
 
     val inputFields = listOf(
-        sprayingInputField("Nazwa nawozu", fertilizer.name),
-        sprayingInputField("Data nawożenia", fertilizer.date),
-        sprayingInputField("Ilość nawozu (kg)", fertilizer.quantity.toString())
+        fertilizerInputField("Nazwa nawozu", fertilizer.name),
+        fertilizerInputField("Data nawożenia", fertilizer.date),
+        fertilizerInputField("Ilość nawozu (kg)", fertilizer.quantity.toString())
     )
 
     var inputValues by remember {
