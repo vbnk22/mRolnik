@@ -86,6 +86,9 @@ fun HomeScreen() {
         composable("cultivations"){
             CultivationsScreen(navController)
         }
+        composable("sprayingCultivationHistory"){
+            SprayingCultivationHistoryScreen(navController)
+        }
     }
 }
 

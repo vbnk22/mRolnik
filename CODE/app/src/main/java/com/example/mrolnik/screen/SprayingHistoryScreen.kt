@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.Icons
 //import androidx.compose.material.icons.filled.ExpandLess
 //import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
@@ -36,7 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
-import com.example.mrolnik.model.FruitTree
+//import com.example.mrolnik.model.FruitTree
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
 
 data class Spraying (
@@ -77,7 +77,7 @@ fun SprayingHistoryScreen(navController: NavController) {
     val sprayingsInputField = listOf(
         sprayingInputField("Nazwa oprysku", ""),
         sprayingInputField("Data oprysku", ""),
-        sprayingInputField("Jakość oprysków", ""),
+        sprayingInputField("Ilośc oprysków", ""),
     )
 
     // Lista z wartościami
@@ -101,7 +101,7 @@ fun SprayingHistoryScreen(navController: NavController) {
             }
 
             Text(
-                text = "Opryski",
+                text = "${currentFruitTree?.plantName}",
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.align(Alignment.Center),
                 textAlign = TextAlign.Center
@@ -173,7 +173,131 @@ fun SprayingHistoryScreen(navController: NavController) {
     }
 }
 
+@Composable
+fun SprayingCultivationHistoryScreen(navController: NavController){
+    val sharedCultivationViewModel = LocalSharedViewModel.current
+    val cultivationState = sharedCultivationViewModel.selectedCultivation.collectAsState()
+    val currentCultivation = cultivationState.value
 
+    val backIcon = painterResource(R.drawable.baseline_arrow_back)
+    val addIcon = painterResource(id = R.drawable.baseline_add)
+
+    var expandedIndex by remember { mutableStateOf<Int?>(null) }
+
+    var showAddSprayingDialog by remember { mutableStateOf(false) }
+
+
+    val sprayings by remember {
+        mutableStateOf(
+            listOf(
+                Spraying("2024-04-10", "Oprysk przeciw mszycom", 1.2),
+                Spraying("2024-04-25", "Fungicyd na parch jabłoni", 1.5),
+                Spraying("2024-05-05", "Nawóz dolistny mikroelementowy", 2.0),
+                Spraying("2024-05-20", "Oprysk przeciw grzybom", 1.8),
+                Spraying("2024-06-01", "Środek na zwójkę liściową", 1.3)
+            )
+        )
+    }
+
+    // LISTA inputFieldów dla dodawania zasobu
+    val sprayingsInputField = listOf(
+        sprayingInputField("Nazwa oprysku", ""),
+        sprayingInputField("Data oprysku", ""),
+        sprayingInputField("Ilośc oprysków", ""),
+    )
+
+    // Lista z wartościami
+    var inputSprayingsFieldValues by remember { mutableStateOf(sprayingsInputField.associateWith { it.value }) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)){
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        ) {
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(
+                    painter = backIcon,
+                    contentDescription = "Wróć",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Text(
+                text = "${currentCultivation?.plantName}",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.align(Alignment.Center),
+                textAlign = TextAlign.Center
+            )
+
+        }
+
+        Button(
+            onClick = { showAddSprayingDialog = true },
+            modifier = Modifier.padding(start = 8.dp)
+        ) {
+            Icon(
+                painter = addIcon,
+                contentDescription = "ADD",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+
+
+        LaunchedEffect(Unit) {
+            //TODO: Fetchowanie danych o opryskach
+        }
+
+        LazyColumn {
+
+            items(sprayings) { spraying ->
+                SprayingItem(
+                    spraying = spraying,
+                    isExpanded = expandedIndex == sprayings.indexOf(spraying),
+                    onClick = {
+                        expandedIndex =
+                            if (expandedIndex == sprayings.indexOf(spraying)) null else sprayings.indexOf(
+                                spraying
+                            )
+                    },
+                )
+            }
+        }
+
+
+
+        if(showAddSprayingDialog){
+            CustomModalDialog(
+                onDismiss = { showAddSprayingDialog = false },
+                title = "Dodaj oprysk",
+                onConfirm = {
+                    // TODO: zrobić dodawanie naprawy możesz użyć currentVehicle.vehicleId
+                    // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
+                },
+                content = {
+                    sprayingsInputField.forEach { inputField ->
+                        TextField(
+                            value = inputSprayingsFieldValues[inputField] ?: "",
+                            onValueChange = { newValue ->
+                                inputSprayingsFieldValues = inputSprayingsFieldValues.toMutableMap().apply {
+                                    this[inputField] = newValue
+                                }
+                            },
+                            label = { Text(inputField.label) },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Wpisz ${inputField.label}") }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            )
+        }
+    }
+}
 @Composable
 fun SprayingItem(
     spraying: Spraying,

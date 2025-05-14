@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.Icons
 //import androidx.compose.material.icons.filled.ExpandLess
 //import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.FruitTree
-import com.example.mrolnik.model.Resource
+//import com.example.mrolnik.model.Resource
 import com.example.mrolnik.service.FruitTreeService
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -226,7 +226,7 @@ fun FruitTreeItem(
                               navController.navigate("sprayingHistory")},
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Sprawdź historię")
+                    Text("Sprawdź historię oprysków")
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
