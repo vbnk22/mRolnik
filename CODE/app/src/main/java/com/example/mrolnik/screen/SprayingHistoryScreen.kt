@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+//import androidx.compose.material.icons.filled.ExpandLess
+//import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -73,14 +73,14 @@ fun SprayingHistoryScreen(navController: NavController) {
         )
     }
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
+    // LISTA inputFieldów dla dodawania zasobu
     val sprayingsInputField = listOf(
         sprayingInputField("Nazwa oprysku", ""),
         sprayingInputField("Data oprysku", ""),
         sprayingInputField("Jakość oprysków", ""),
     )
 
-    // TODO: Lista z wartościami
+    // Lista z wartościami
     var inputSprayingsFieldValues by remember { mutableStateOf(sprayingsInputField.associateWith { it.value }) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)){
@@ -147,7 +147,7 @@ fun SprayingHistoryScreen(navController: NavController) {
         if(showAddSprayingDialog){
             CustomModalDialog(
                 onDismiss = { showAddSprayingDialog = false },
-                title = "Dodaj naprawę",
+                title = "Dodaj oprysk",
                 onConfirm = {
                     // TODO: zrobić dodawanie naprawy możesz użyć currentVehicle.vehicleId
                     // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
@@ -208,10 +208,10 @@ fun SprayingItem(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null
-                )
+//                Icon(
+//                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+//                    contentDescription = null
+//                )
             }
 
             if (isExpanded) {

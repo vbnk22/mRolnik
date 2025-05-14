@@ -5,7 +5,7 @@ class FruitTree {
     var plantName: String = ""
     var plannedHarvestDate: String = ""
     var usedSprayingQuantity: Double = 0.0
-    var sprayingId: Int = 0
+    var orchardId: Int = 0
 
     constructor(plantName: String, plannedHarvestDate: String, usedSprayingQuantity: Double) {
         this.plantName = plantName

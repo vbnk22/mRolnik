@@ -1,5 +1,6 @@
 package com.example.mrolnik.screen
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavController
@@ -22,51 +23,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mrolnik.R
-import com.example.mrolnik.model.Warehouse
+import com.example.mrolnik.model.Repair
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.example.mrolnik.model.Resource
+import com.example.mrolnik.service.VehicleService
+import com.example.mrolnik.service.WarehouseService
+import kotlinx.datetime.LocalDate
 
 data class resourcesInputField(val label: String, val value: String)
-
-data class Resource(
-    val name: String,
-    val quantity: Double,
-    val unit: String
-)
 
 @Composable
 fun ResourcesManagementScreen(navController: NavController) {
     val sharedWarehouseViewModel = LocalSharedViewModel.current
     val warehouseState = sharedWarehouseViewModel.selectedWarehouse.collectAsState()
 
-    val currentWarehouse = warehouseState.value // TODO: Wybrany magazyn wieć możesz korzystać z ID i po tym wyszukiwać Resources
+    val currentWarehouse = warehouseState.value
 
     var showAddRecourcesDialog by remember { mutableStateOf(false) }
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
     val addIcon = painterResource(id = R.drawable.baseline_add)
 
-    // TODO: lista zasobów na razie na sztywno aby sprawdzić działanie wszystkiego
-    var resources by remember {
-        mutableStateOf(
-            listOf(
-                Resource("Zboże", 150.0, "kg"),
-                Resource("Woda", 200.0, "l"),
-                Resource("Paliwo", 75.5, "l"),
-                Resource("Nawóz", 30.0, "kg"),
-                Resource("Pasza", 120.0, "kg")
-            )
-        )
-    }
+    var resources by remember { mutableStateOf(emptyList<Resource>()) }
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
+    // LISTA inputFieldów dla dodawania zasobu
     val resourcesInputField = listOf(
-        resourcesInputField("Nazwa", ""), resourcesInputField("Ilość", ""), resourcesInputField("Jednoska", "")
+        resourcesInputField("Nazwa", ""), resourcesInputField("Ilość", ""), resourcesInputField("Jednostka", "")
     )
 
-    // TODO: Lista z wartościami
+    // Lista z wartościami
     var inputResourcesFieldValues by remember { mutableStateOf(resourcesInputField.associateWith { it.value }) }
+
+    val warehouseService = WarehouseService()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Box(
@@ -108,7 +97,7 @@ fun ResourcesManagementScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
         Text("Zasoby w ${currentWarehouse?.warehouseName}:", style = MaterialTheme.typography.headlineSmall)
         LaunchedEffect(Unit) {
-            //TODO: Fetchowanie danych do zmiennej resources
+            resources = warehouseService.getAllResourcesByWarehouseId(currentWarehouse)
         }
 
         LazyColumn {
@@ -132,8 +121,19 @@ fun ResourcesManagementScreen(navController: NavController) {
                 onDismiss = { showAddRecourcesDialog = false },
                 title = "Dodaj zasoby",
                 onConfirm = {
-                    // TODO: zrobić dodawanie zasobów do magazynu możesz do tego użyć currentWarehouse.warehouseId
-                    // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
+                    val fieldValues = inputResourcesFieldValues.mapKeys { it.key.label }
+
+                    val name = fieldValues["Nazwa"] ?: ""
+                    val quantity = fieldValues["Ilość"]?.toDoubleOrNull() ?: 0.0
+                    val unitMeasures = fieldValues["Jednostka"] ?: ""
+
+                    val resource = Resource(name, quantity, unitMeasures)
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        warehouseService.assignResourceToWarehouse(resource, currentWarehouse)
+                        resources = warehouseService.getAllResourcesByWarehouseId(currentWarehouse)
+                    }
+                    showAddRecourcesDialog = false
                 },
                 content = {
                     resourcesInputField.forEach { inputField ->
@@ -170,7 +170,7 @@ fun ResourceRow(resource: Resource, navController: NavController) {
     val inputFields = listOf(
         resourcesInputField("Nazwa", resource.name),
         resourcesInputField("Ilość", resource.quantity.toString()),
-        resourcesInputField("Jednoska", resource.unit)
+        resourcesInputField("Jednostka", resource.unitMeasures)
 
     )
 
@@ -204,7 +204,7 @@ fun ResourceRow(resource: Resource, navController: NavController) {
                 onClick = {
                     // TODO odswiezyc liste magazynów po usunięciu
                     CoroutineScope(Dispatchers.IO).launch {
-                        // TODO: zaimplementować usuwanie resource
+                        warehouseService.deleteResource(resource)
                     }
                 },
                 modifier = Modifier.padding(start = 4.dp)
@@ -232,11 +232,20 @@ fun ResourceRow(resource: Resource, navController: NavController) {
                 onDismiss = { showEditDialog = false },
                 title = "Edytuj: ${resource.name}",
                 onConfirm = {
-                    // TODO przy debugowaniu wszystko jest dobrze, po odpaleniu aplpikacji wyrzuca błąd
-                    //  po wpisaniu pustego znaku
-                    // TODO: zaimplementować edycje dla resources
-
                     // TODO wyswietlic informacje dla uzytkownika o blednym wpisaniu nazwy
+
+                    val fieldValues = inputFieldValues.mapKeys { it.key.label }
+                    val name = fieldValues["Nazwa"] ?: ""
+                    val quantity = fieldValues["Ilość"]?.toDoubleOrNull() ?: 0.0
+                    val unitMeasures = fieldValues["Jednostka"] ?: ""
+                    resource.name = name
+                    resource.quantity = quantity
+                    resource.unitMeasures = unitMeasures
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        warehouseService.updateResource(resource)
+                    }
+
                     showEditDialog = false
                 },
                 content = {
@@ -271,7 +280,7 @@ fun ResourceRow(resource: Resource, navController: NavController) {
                     Text(text = resource.quantity.toString(), modifier = Modifier.padding(bottom = 8.dp))
 
                     Text(text = "Jednoska:", fontWeight = FontWeight.Bold)
-                    Text(text = resource.unit)
+                    Text(text = resource.unitMeasures)
                 }
             }
         }

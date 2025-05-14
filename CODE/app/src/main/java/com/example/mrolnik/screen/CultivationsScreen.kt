@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+//import androidx.compose.material.icons.filled.ExpandLess
+//import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -37,9 +37,15 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.Cultivation
+import com.example.mrolnik.service.CultivationService
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlin.text.toDoubleOrNull
 
 data class cultivationInputField(val label: String, val value: String)
+val cultivationService = CultivationService()
 
 @Composable
 fun CultivationsScreen(navController: NavController) {
@@ -55,18 +61,9 @@ fun CultivationsScreen(navController: NavController) {
 
         var showAddCultivationDialog by remember { mutableStateOf(false) }
 
-        val cultivations by remember {
-            mutableStateOf(
-                listOf(
-                    Cultivation("Pomidor", "2024-08-15", 1.5,3.0 ),
-                    Cultivation("Ogórek", "2024-07-20", 2.0, 2.5),
-                    Cultivation("Papryka", "2024-09-10", 1.8, 2.0),
-                    Cultivation("Sałata", "2024-06-30", 1.2, 1.8),
-                )
-            )
-        }
+        var cultivations by remember { mutableStateOf(emptyList<Cultivation>()) }
 
-        // TODO: LISTA inputFieldów dla dodawania zasobu
+        // LISTA inputFieldów dla dodawania zasobu
         val cultivationsInputField = listOf(
             cultivationInputField("Nazwa", ""),
             cultivationInputField("Planowany zbiór", ""),
@@ -74,7 +71,7 @@ fun CultivationsScreen(navController: NavController) {
             cultivationInputField("Ilość nawozu", "")
         )
 
-        // TODO: Lista z wartościami
+        // Lista z wartościami
         var inputCultivationsFieldValues by remember { mutableStateOf(cultivationsInputField.associateWith { it.value }) }
 
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -118,6 +115,7 @@ fun CultivationsScreen(navController: NavController) {
 
             LaunchedEffect(Unit) {
                 //TODO: Fetchowanie danych o drzewkach
+                cultivations = cultivationService.getAllCultivationsByFieldId(currentField)
             }
 
             LazyColumn {
@@ -141,8 +139,27 @@ fun CultivationsScreen(navController: NavController) {
                     onDismiss = { showAddCultivationDialog = false },
                     title = "Dodaj uprawę",
                     onConfirm = {
-                        // TODO: zrobić dodawanie naprawy możesz użyć currentVehicle.vehicleId
-                        // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
+                        val fieldValues = inputCultivationsFieldValues.mapKeys { it.key.label }
+
+                        val plantName = fieldValues["Nazwa"] ?: ""
+                        // TODO DLA OLKA - usun komentarz, zmien etykiete i usun sowingDate ustawione na twardo
+                        //val sowingDate = fieldValues["TU DAJ DOBRA ETYKIETE"] ?: ""
+
+                        // DO USUNIECIA
+                        val sowingDate = "2025-05-13"
+                        // DO USUNIECIA ^^^^^^^^^^^^^
+
+                        val plannedharvestDate = fieldValues["Planowany zbiór"] ?: ""
+                        val usedFertilizerQuantity = fieldValues["Ilość nawozu"]?.toDoubleOrNull() ?: 0.0
+                        val usedSprayingQuantity = fieldValues["Ilość oprysków"]?.toDoubleOrNull() ?: 0.0
+
+                        val cultivation = Cultivation(plantName, sowingDate, plannedharvestDate, usedSprayingQuantity, usedFertilizerQuantity)
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            cultivationService.assignCultivationToField(cultivation, currentField)
+                            cultivations = cultivationService.getAllCultivationsByFieldId(currentField)
+                        }
+                        showAddCultivationDialog = false
                     },
                     content = {
                         cultivationsInputField.forEach { inputField ->
@@ -176,14 +193,14 @@ fun CultivationItem(
     var showCultivationDialog by remember { mutableStateOf(false) }
     val sharedViewModel = LocalSharedViewModel.current
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
+    // LISTA inputFieldów dla dodawania zasobu
     val cultivationInputField = listOf(
         cultivationInputField("Nazwa", cultivation.plantName),
         cultivationInputField("Planowany zbiór", cultivation.plannedHarvestDate),
-        cultivationInputField("Jakość opryskiwacza", cultivation.usedFertilizerlizerQuantity.toString()),
+        cultivationInputField("Jakość opryskiwacza", cultivation.usedFertilizerQuantity.toString()),
     )
 
-    // TODO: Lista z wartościami
+    // Lista z wartościami
     var inputcultivationInputField by remember { mutableStateOf(cultivationInputField.associateWith { it.value }) }
 
     Card(
@@ -201,10 +218,10 @@ fun CultivationItem(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null
-                )
+//                Icon(
+//                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+//                    contentDescription = null
+//                )
             }
 
             if (isExpanded) {
@@ -212,7 +229,7 @@ fun CultivationItem(
                 Text("Nazwa: ${cultivation.plantName}")
                 Text("Data planowanych zbiorów: ${cultivation.plannedHarvestDate}")
                 Text("Jakość użytego spryskiwacza: ${cultivation.usedSprayingQuantity}")
-                Text("Jakość użytego nawozu: ${cultivation.usedFertilizerlizerQuantity}")
+                Text("Jakość użytego nawozu: ${cultivation.usedFertilizerQuantity}")
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -251,7 +268,11 @@ fun CultivationItem(
                         Text("Edytuj")
                     }
 
-                    Button(onClick = { /* TODO: Logika usuwania */ }) {
+                    Button(onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                        cultivationService.deleteCultivation(cultivation)
+                        }
+                    }) {
                         Text("Usuń")
                     }
                 }
@@ -262,7 +283,29 @@ fun CultivationItem(
                     title = "Edytuj: ${cultivation.plantName}",
                     onConfirm = {
                         // TODO implementacja edycji danych
+                        // TODO wyswietlic informacje dla uzytkownika o blednym wpisaniu nazwy
 
+                        val fieldValues = inputcultivationInputField.mapKeys { it.key.label }
+                        val plantName = fieldValues["Nazwa"] ?: ""
+                        // TODO DLA OLKA - usun komentarz, zmien etykiete i usun sowingDate ustawione na twardo
+                        //val sowingDate = fieldValues["TU DAJ DOBRA ETYKIETE"] ?: ""
+
+                        // DO USUNIECIA
+                        val sowingDate = "2025-05-13"
+                        // DO USUNIECIA ^^^^^^^^^^^^^
+
+                        val plannedharvestDate = fieldValues["Planowany zbiór"] ?: ""
+                        val usedFertilizerQuantity = fieldValues["Ilość nawozu"]?.toDoubleOrNull() ?: 0.0
+                        val usedSprayingQuantity = fieldValues["Ilość oprysków"]?.toDoubleOrNull() ?: 0.0
+                        cultivation.plantName = plantName
+                        cultivation.sowingDate = sowingDate
+                        cultivation.plannedHarvestDate = plannedharvestDate
+                        cultivation.usedFertilizerQuantity = usedFertilizerQuantity
+                        cultivation.usedSprayingQuantity = usedSprayingQuantity
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            cultivationService.updateCultivation(cultivation)
+                        }
                         showCultivationDialog = false
                     },
                     content = {

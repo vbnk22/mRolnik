@@ -32,7 +32,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
+import com.example.mrolnik.model.Combustion
+import com.example.mrolnik.service.CombustionService
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+val combustionService = CombustionService()
 
 @Composable
 fun VehicleInformationScreen(navController: NavController) {
@@ -88,6 +95,9 @@ fun VehicleInformationScreen(navController: NavController) {
 
         LaunchedEffect(Unit) {
             //TODO: DOdaj fetchowanie z tabeli combustion na chwile obecną te dane są na sztywno
+            CoroutineScope(Dispatchers.IO).launch {
+                combustionService.getAllCombustionsByVehicleId(currentVehicle)
+            }
         }
 
         LazyColumn {
@@ -126,6 +136,9 @@ fun VehicleInformationScreen(navController: NavController) {
             Button(
                 onClick = {
                     // TODO: Obsłuż usuwanie danych
+//                    CoroutineScope(Dispatchers.IO).launch {
+//                        combustionService.deleteCombustion(combustion)
+//                    }
                 }
             ) {
                 Text("Usuń")

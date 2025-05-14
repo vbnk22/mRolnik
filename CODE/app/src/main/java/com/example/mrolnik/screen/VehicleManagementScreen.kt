@@ -90,7 +90,7 @@ fun VehicleManagementScreen(navController: NavController) {
                             vehicleName = ""
                             vehicleCondition = ""
                             val fetchedVehicles = withContext(Dispatchers.IO) {
-                                vehicleService.getAllByUserId()
+                                vehicleService.getAllVehiclesByUserId()
                             }
                             vehicles = fetchedVehicles
                             showForm = false
@@ -107,7 +107,7 @@ fun VehicleManagementScreen(navController: NavController) {
         Text("Twoje pojazdy:", style = MaterialTheme.typography.headlineSmall)
         LaunchedEffect(Unit) {
             val fetchedVehicles = withContext(Dispatchers.IO) {
-                vehicleService.getAllByUserId()
+                vehicleService.getAllVehiclesByUserId()
             }
             vehicles = fetchedVehicles
         }

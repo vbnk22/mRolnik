@@ -1,11 +1,13 @@
 package com.example.mrolnik.service
 
 import android.util.Log
+import androidx.collection.emptyObjectList
 import com.example.mrolnik.config.SupabaseClient
-import com.example.mrolnik.model.Animal
+import com.example.mrolnik.model.Repair
 import com.example.mrolnik.model.Vehicle
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.datetime.LocalDate
 
 class VehicleService {
     val supabase = SupabaseClient().getSupabaseClient()
@@ -43,7 +45,7 @@ class VehicleService {
         }
     }
 
-    suspend fun getAllByUserId(): List<Vehicle> {
+    suspend fun getAllVehiclesByUserId(): List<Vehicle> {
         var usersVehicles: List<Vehicle> = emptyList()
         try {
             val userId = UserService.getLoggedUserId()
@@ -65,6 +67,16 @@ class VehicleService {
                 .decodeList<Vehicle>()
         } catch (e: Exception) {
             Log.e("VehicleService", "Fetching user's vehicles error ${e.message}")
+        }
+        return usersVehicles
+    }
+
+    suspend fun getAllVehicles(): List<Vehicle> {
+        var usersVehicles: List<Vehicle> = emptyList()
+        try {
+            usersVehicles = supabase.from("vehicle").select().decodeList<Vehicle>()
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Updating vehicle data error ${e.message}")
         }
         return usersVehicles
     }
@@ -95,5 +107,66 @@ class VehicleService {
         } catch (e: Exception) {
             Log.e("VehicleService", "Deleting vehicle error ${e.message}")
         }
+    }
+
+    // Opcjonalnie jako parametr: vehicle albo vehicleId: Int
+    suspend fun assignRepairToVehicle(repair: Repair, vehicle: Vehicle?) {
+        try {
+            supabase.from("repair").insert(
+                mapOf(
+                    "repairDate" to repair.repairDate,
+                    "description" to repair.description,
+                    "cost" to repair.cost,
+                    "vehicleId" to vehicle?.vehicleId
+                ))
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Assigning repair to vehicle error: ${e.message}")
+        }
+    }
+
+    suspend fun updateRepair(repair: Repair) {
+        try {
+            supabase.from("repair").update(
+                {
+                    set("repairDate", repair.repairDate)
+                    set("description", repair.description)
+                    set("cost", repair.cost)
+                }
+            ) {
+                filter {
+                    eq("repairId", repair.repairId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Updating repair error: ${e.message}")
+        }
+    }
+
+    suspend fun deleteRepair(repair: Repair) {
+        try {
+            supabase.from("repair").delete{
+                filter {
+                    eq("repairId", repair.repairId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Deleting repair error: ${e.message}")
+        }
+    }
+
+    suspend fun getAllRepairsByVehicleId(vehicle: Vehicle?): List<Repair> {
+        var vehiclesRepairs: List<Repair> = emptyList()
+        try {
+            vehiclesRepairs = supabase.from("repair")
+                .select {
+                    filter {
+                        eq("vehicleId", vehicle!!.vehicleId)
+                    }
+                }
+                .decodeList<Repair>()
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Fetching user's vehicles error ${e.message}")
+        }
+        return vehiclesRepairs
     }
 }

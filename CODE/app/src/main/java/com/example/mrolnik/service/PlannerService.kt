@@ -18,7 +18,6 @@ class PlannerService {
         var userService = UserService()
         val plannerId = UserService.getLoggedUserPlannerId()
         val planner = Planner(userId)
-        //val objectMapper = ObjectMapper().registerModule(JavaTimeModule())
         if (plannerId != userId) {
             try {
                 supabase.from("planner")

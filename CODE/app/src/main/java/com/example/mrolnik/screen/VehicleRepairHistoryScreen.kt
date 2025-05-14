@@ -1,5 +1,7 @@
 package com.example.mrolnik.screen
 
+import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,8 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+//import androidx.compose.material.icons.filled.ExpandLess
+//import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -36,21 +38,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
+import com.example.mrolnik.model.Repair
+import com.example.mrolnik.service.VehicleService
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 
 data class repairInputField(val label: String, val value: String)
 
-data class Repair(
-    val name: String,
-    val date: String,
-    val cost: Double,
-    val description: String
-)
-
+@SuppressLint("NewApi")
 @Composable
 fun VehicleRepairHistoryScreen(navController: NavController) {
     val sharedVehicleViewModel = LocalSharedViewModel.current
-    val vehicleState = sharedVehicleViewModel.selectedWarehouse.collectAsState()
+    val vehicleState = sharedVehicleViewModel.selectedVehicle.collectAsState()
     val currentVehicle = vehicleState.value
 
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
@@ -58,29 +60,24 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
 
     var showAddRepairDialog by remember { mutableStateOf(false) }
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
+    // LISTA inputFieldów dla dodawania zasobu
     val repairsInputField = listOf(
-        repairInputField("Nazwa", ""),
         repairInputField("Opis", ""),
         repairInputField("Koszt", ""),
         repairInputField("Data naprawy", "")
     )
 
-    // TODO: Lista z wartościami
+    // Lista z wartościami
     var inputRepairsFieldValues by remember { mutableStateOf(repairsInputField.associateWith { it.value }) }
-    val repairs by remember {
-        mutableStateOf(
-            listOf(
-                Repair("Wymiana oleju", "2024-02-15", 250.0, "Wymiana oleju silnikowego oraz filtrów."),
-                Repair("Wymiana opon", "2023-10-05", 800.0, "Zamiana opon letnich na zimowe, zbalansowanie kół."),
-                Repair("Naprawa hamulców", "2023-08-19", 500.0, "Wymiana klocków hamulcowych na przedniej osi."),
-            )
-        )
-    }
+    var repairs by remember { mutableStateOf(emptyList<Repair>()) }
 
     var expandedIndex by remember { mutableStateOf<Int?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    val vehicleService = VehicleService()
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -120,7 +117,7 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         LaunchedEffect(Unit) {
-            //TODO: Fetchowanie danych od naprawach jak zawsze wszystko robie na sztywnych danych
+            repairs = vehicleService.getAllRepairsByVehicleId(currentVehicle)
         }
 
         LazyColumn {
@@ -140,8 +137,20 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
                 onDismiss = { showAddRepairDialog = false },
                 title = "Dodaj naprawę",
                 onConfirm = {
-                    // TODO: zrobić dodawanie naprawy możesz użyć currentVehicle.vehicleId
-                    // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
+                    val fieldValues = inputRepairsFieldValues.mapKeys { it.key.label }
+
+                    val description = fieldValues["Opis"] ?: ""
+                    val cost = fieldValues["Koszt"]?.toDoubleOrNull() ?: 0.0
+                    val date = fieldValues["Data naprawy"] ?: ""
+                    Log.i("VehicleRepairHistScreen", "dane: opis ${description}, koszt ${cost}, data ${date}.")
+
+                    val repair = Repair(LocalDate.parse(date).toString(), description, cost)
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        vehicleService.assignRepairToVehicle(repair, currentVehicle)
+                        repairs = vehicleService.getAllRepairsByVehicleId(currentVehicle)
+                    }
+                    showAddRepairDialog = false
                 },
                 content = {
                     repairsInputField.forEach { inputField ->
@@ -172,17 +181,15 @@ fun RepairItem(
 ) {
     var showEditRepairDialog by remember { mutableStateOf(false) }
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
+    // LISTA inputFieldów dla dodawania zasobu
     val repairsInputField = listOf(
-        repairInputField("Nazwa", repair.name),
         repairInputField("Opis", repair.description),
         repairInputField("Koszt", repair.cost.toString()),
-        repairInputField("Data naprawy", repair.date)
+        repairInputField("Data naprawy", repair.repairDate.toString())
     )
 
-    // TODO: Lista z wartościami
+    // Lista z wartościami
     var inputRepairsFieldValues by remember { mutableStateOf(repairsInputField.associateWith { it.value }) }
-
 
     Card(
         modifier = Modifier
@@ -195,21 +202,22 @@ fun RepairItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = repair.name,
+                    text = repair.description,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null
-                )
+                // TODO naprawic te ikonki
+//                Icon(
+//                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+//                    contentDescription = null
+//                )
             }
 
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Data naprawy: ${repair.date}")
+                Text("Data naprawy: ${repair.repairDate}")
                 Text("Koszt: ${repair.cost} PLN")
-                Text("Opis: ${repair.description}")
+                //Text("Opis: ${repair.description}")
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -218,7 +226,10 @@ fun RepairItem(
                         Text("Edytuj")
                     }
                     Button(onClick = {
-                    //TODO: zaimplementuj usuwanie
+                        CoroutineScope(Dispatchers.IO).launch {
+                            // TODO odswiezenie listy po usunieciu
+                            vehicleService.deleteRepair(repair)
+                        }
                     }) {
                         Text("Usuń")
                     }
@@ -227,9 +238,19 @@ fun RepairItem(
                 if (showEditRepairDialog) {
                     CustomModalDialog(
                         onDismiss = { showEditRepairDialog = false },
-                        title = "Edytuj: ${repair.name}",
+                        title = "Edytuj opis: ${repair.description}",
                         onConfirm = {
-                            // TODO implementacja edycji danych
+                            val fieldValues = inputRepairsFieldValues.mapKeys { it.key.label }
+                            val description = fieldValues["Opis"] ?: ""
+                            val cost = fieldValues["Koszt"]?.toDoubleOrNull() ?: 0.0
+                            val date = fieldValues["Data naprawy"] ?: ""
+                            repair.description = description
+                            repair.cost = cost
+                            repair.repairDate = date
+
+                            CoroutineScope(Dispatchers.IO).launch {
+                                vehicleService.updateRepair(repair)
+                            }
 
                             showEditRepairDialog = false
                         },

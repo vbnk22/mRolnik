@@ -2,7 +2,7 @@ package com.example.mrolnik.service
 
 import android.util.Log
 import com.example.mrolnik.config.SupabaseClient
-import com.example.mrolnik.model.Vehicle
+import com.example.mrolnik.model.Resource
 import io.github.jan.supabase.postgrest.from
 import com.example.mrolnik.model.Warehouse
 import io.github.jan.supabase.postgrest.query.Columns
@@ -94,5 +94,65 @@ class WarehouseService {
         } catch (e: Exception) {
             Log.e("WarehouseService", "Deleting warehouse error ${e.message}")
         }
+    }
+
+    suspend fun assignResourceToWarehouse(resource: Resource, warehouse: Warehouse?) {
+        try {
+            supabase.from("resource").insert(
+                mapOf(
+                    "name" to resource.name,
+                    "quantity" to resource.quantity,
+                    "unitMeasures" to resource.unitMeasures,
+                    "warehouseId" to warehouse?.warehouseId
+                ))
+        } catch (e: Exception) {
+            Log.e("WarehouseService", "Assigning resource to warehouse error: ${e.message}")
+        }
+    }
+
+    suspend fun updateResource(resource: Resource) {
+        try {
+            supabase.from("resource").update(
+                {
+                    set("name", resource.name)
+                    set("quantity", resource.quantity)
+                    set("unitMeasures", resource.unitMeasures)
+                }
+            ) {
+                filter {
+                    eq("resourceId", resource.resourceId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("WarehouseService", "Updating resource error: ${e.message}")
+        }
+    }
+
+    suspend fun deleteResource(resource: Resource) {
+        try {
+            supabase.from("resource").delete{
+                filter {
+                    eq("resourceId", resource.resourceId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("WarehouseService", "Deleting resource error: ${e.message}")
+        }
+    }
+
+    suspend fun getAllResourcesByWarehouseId(warehouse: Warehouse?): List<Resource> {
+        var warehousesResources: List<Resource> = emptyList()
+        try {
+            warehousesResources = supabase.from("resource")
+                .select {
+                    filter {
+                        eq("warehouseId", warehouse!!.warehouseId)
+                    }
+                }
+                .decodeList<Resource>()
+        } catch (e: Exception) {
+            Log.e("WarehouseService", "Fetching user's resources error ${e.message}")
+        }
+        return warehousesResources
     }
 }

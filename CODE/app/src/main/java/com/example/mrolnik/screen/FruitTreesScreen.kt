@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+//import androidx.compose.material.icons.filled.ExpandLess
+//import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -37,15 +37,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.FruitTree
+import com.example.mrolnik.model.Resource
+import com.example.mrolnik.service.FruitTreeService
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
-
-//data class FruitTree(
-//    val plantName: String,
-//    val plannedHarvestDate: String,
-//    val usedSprayingQuantity: Double
-//)
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 data class fruitTreeInputField(val label: String, val value: String)
+
+val fruitTreeService = FruitTreeService()
 
 @Composable
 fun FruitTreesScreen(navController: NavController) {
@@ -61,26 +62,16 @@ fun FruitTreesScreen(navController: NavController) {
 
     var showAddFruitTreeDialog by remember { mutableStateOf(false) }
 
-    val fruitTrees by remember {
-        mutableStateOf(
-            listOf(
-                FruitTree("Jabłoń Champion", "2024-09-15", 2.5),
-                FruitTree("Grusza Konferencja", "2024-08-30", 1.8),
-                FruitTree("Śliwa Węgierka", "2024-09-20", 3.0),
-                FruitTree("Czereśnia Kordia", "2024-07-10", 2.2),
-                FruitTree("Morela Harcot", "2024-06-25", 1.5)
-            )
-        )
-    }
+    var fruitTrees by remember { mutableStateOf(emptyList<FruitTree>()) }
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
+    // LISTA inputFieldów dla dodawania zasobu
     val fruitTreesInputField = listOf(
         fruitTreeInputField("Nazwa", ""),
         fruitTreeInputField("Planowany zbiór", ""),
         fruitTreeInputField("Jakość oprysków", ""),
     )
 
-    // TODO: Lista z wartościami
+    // Lista z wartościami
     var inputFruitTreesFieldValues by remember { mutableStateOf(fruitTreesInputField.associateWith { it.value }) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)){
@@ -123,7 +114,7 @@ fun FruitTreesScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         LaunchedEffect(Unit) {
-            //TODO: Fetchowanie danych o drzewkach
+            fruitTrees = fruitTreeService.getAllFruitTreesByOrchardId(currentOrchard)
         }
 
         LazyColumn {
@@ -144,8 +135,19 @@ fun FruitTreesScreen(navController: NavController) {
                 onDismiss = { showAddFruitTreeDialog = false },
                 title = "Dodaj naprawę",
                 onConfirm = {
-                    // TODO: zrobić dodawanie naprawy możesz użyć currentVehicle.vehicleId
-                    // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
+                    val fieldValues = inputFruitTreesFieldValues.mapKeys { it.key.label }
+
+                    val plantName = fieldValues["Nazwa"] ?: ""
+                    val plannedHarvestDate = fieldValues["Planowany zbiór"] ?: ""
+                    val usedSprayingQuantity = fieldValues["Jakość oprysków"]?.toDoubleOrNull() ?: 0.0
+
+                    val fruitTree = FruitTree(plantName, plannedHarvestDate, usedSprayingQuantity)
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        fruitTreeService.assignFruitTreeToOrchard(fruitTree, currentOrchard)
+                        fruitTrees = fruitTreeService.getAllFruitTreesByOrchardId(currentOrchard)
+                    }
+                    showAddFruitTreeDialog = false
                 },
                 content = {
                     fruitTreesInputField.forEach { inputField ->
@@ -178,14 +180,14 @@ fun FruitTreeItem(
     var showFruitTreeDialog by remember { mutableStateOf(false) }
     val sharedViewModel = LocalSharedViewModel.current
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
+    // LISTA inputFieldów dla dodawania zasobu
     val fruitTreesInputField = listOf(
         fruitTreeInputField("Nazwa", fruitTree.plantName),
         fruitTreeInputField("Planowany zbiór", fruitTree.plannedHarvestDate),
-        fruitTreeInputField("Jakość opryskiwacza", fruitTree.usedSprayingQuantity.toString()),
+        fruitTreeInputField("Jakość oprysków", fruitTree.usedSprayingQuantity.toString()),
     )
 
-    // TODO: Lista z wartościami
+    // Lista z wartościami
     var inputFruitTreesFieldValues by remember { mutableStateOf(fruitTreesInputField.associateWith { it.value }) }
 
     Card(
@@ -203,10 +205,10 @@ fun FruitTreeItem(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null
-                )
+//                Icon(
+//                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+//                    contentDescription = null
+//                )
             }
 
             if (isExpanded) {
@@ -238,7 +240,11 @@ fun FruitTreeItem(
                         Text("Edytuj")
                     }
 
-                    Button(onClick = { /* TODO: Logika usuwania */ }) {
+                    Button(onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            fruitTreeService.deleteFruitTree(fruitTree)
+                        }
+                    }) {
                         Text("Usuń")
                     }
                 }
@@ -248,7 +254,17 @@ fun FruitTreeItem(
                     onDismiss = { showFruitTreeDialog = false },
                     title = "Edytuj: ${fruitTree.plantName}",
                     onConfirm = {
-                        // TODO implementacja edycji danych
+                        val fieldValues = inputFruitTreesFieldValues.mapKeys { it.key.label }
+                        val plantName = fieldValues["Nazwa"] ?: ""
+                        val plannedHarvestDate = fieldValues["Planowany zbiór"] ?: ""
+                        val usedSprayingQuantity = fieldValues["Jakość oprysków"]?.toDoubleOrNull() ?: 0.0
+                        fruitTree.plantName = plantName
+                        fruitTree.plannedHarvestDate = plannedHarvestDate
+                        fruitTree.usedSprayingQuantity = usedSprayingQuantity
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            fruitTreeService.updateFruitTree(fruitTree)
+                        }
 
                         showFruitTreeDialog = false },
                     content = {
