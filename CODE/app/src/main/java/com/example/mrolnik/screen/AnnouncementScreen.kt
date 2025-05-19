@@ -162,6 +162,20 @@ fun AnnouncementItem(
                         Text("Napisz wiadomość")
                     }
                 }
+                else{
+                    Row {
+                        Button(onClick = {
+
+                        }){
+                            Text("Edytuj ogłoszenie")
+                        }
+                        Button(onClick = {
+
+                        }) {
+                            Text("Usuń ogłoszenie")
+                        }
+                    }
+                }
             }
         }
     }
