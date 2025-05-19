@@ -1,8 +1,7 @@
 package com.example.mrolnik.screen
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -18,53 +17,68 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
+import com.example.mrolnik.model.Offer
+import com.example.mrolnik.service.UserService
+import com.example.mrolnik.service.OfferService
+import kotlinx.coroutines.launch
+
+var offerService = OfferService()
 
 @Composable
 fun AnnouncementScreen(navController: NavController) {
+    val userNames = remember { mutableStateMapOf<Int, String>() }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val loggedInUser = UserService.getLoggedUser().firstName + " " + UserService.getLoggedUser().lastName
+    val loggedInUserId:Int = UserService.getLoggedUserId()
+
     var expandedIndex by remember { mutableStateOf<Int?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
-
     var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedAnnouncement by remember { mutableStateOf<Announcement?>(null) }
+
+    var selectedOffer by remember { mutableStateOf<Offer?>(null) }
     var editedDescription by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+
+    var offers = remember { mutableStateListOf<Offer>() }
+
+    LaunchedEffect(Unit) {
+        val loadedOffers = offerService.getAllOffers()
+        offers.clear()
+        offers.addAll(loadedOffers)
+
+        val userIds = loadedOffers.map { it.userId }.distinct()
+        userIds.forEach { userId ->
+            if (userId !in userNames) {
+                val name = UserService().getNameFromId(userId)
+                if (name != null) {
+                    userNames[userId] = name
+                }
+            }
+        }
+    }
+
+
+    var showOnlyMyOffers by remember { mutableStateOf(false) }
+    val filteredOffers = if (showOnlyMyOffers) {
+        offers.filter { it.userId == loggedInUserId }
+    } else {
+        offers
+    }
 
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
 
-    val loggedInUser = "Jan Kowalski"
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
 
-    val announcements = remember {
-        mutableStateListOf(
-            Announcement("Kupię nawóz azotowy", "Jan Kowalski"),
-            Announcement("Sprzedam ciągnik Ursus C-360, dobry stan", "Anna Nowak"),
-            Announcement("Zatrudnię pomocnika na żniwa", "Piotr Zieliński")
-        )
-    }
-
-    var showOnlyMyAnnouncements by remember { mutableStateOf(false) }
-    val filteredAnnouncements = if (showOnlyMyAnnouncements) {
-        announcements.filter { it.username == loggedInUser }
-    } else {
-        announcements
-    }
-
-    var description by remember { mutableStateOf("") }
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        ) {
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier.align(Alignment.CenterStart)
-            ) {
-                Icon(
-                    painter = backIcon,
-                    contentDescription = "Wróć",
-                    modifier = Modifier.size(24.dp)
-                )
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)) {
+            IconButton(onClick = { navController.popBackStack() }, modifier = Modifier.align(Alignment.CenterStart)) {
+                Icon(painter = backIcon, contentDescription = "Wróć", modifier = Modifier.size(24.dp))
             }
 
             Text(
@@ -79,31 +93,32 @@ fun AnnouncementScreen(navController: NavController) {
             Button(onClick = { showAddDialog = true }) {
                 Text("Dodaj ogłoszenie")
             }
-            Button(onClick = { showOnlyMyAnnouncements = !showOnlyMyAnnouncements }) {
-                Text(if (showOnlyMyAnnouncements) "Wszystkie ogłoszenia" else "Moje ogłoszenia")
+            Button(onClick = { showOnlyMyOffers = !showOnlyMyOffers }) {
+                Text(if (showOnlyMyOffers) "Wszystkie ogłoszenia" else "Moje ogłoszenia")
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn {
-            itemsIndexed(filteredAnnouncements) { index, announcement ->
-                AnnouncementItem(
-                    announcement = announcement,
+            itemsIndexed(filteredOffers) { index, offer ->
+                OfferItem(
+                    offer = offer,
                     isExpanded = expandedIndex == index,
                     onClick = {
                         expandedIndex = if (expandedIndex == index) null else index
                     },
-                    loggedInUser = loggedInUser,
+                    loggedInUserId = UserService.getLoggedUserId(),
                     onEdit = {
-                        selectedAnnouncement = announcement
-                        editedDescription = announcement.description
+                        selectedOffer = offer
+                        editedDescription = offer.description
                         showEditDialog = true
                     },
                     onDelete = {
-                        selectedAnnouncement = announcement
+                        selectedOffer = offer
                         showDeleteDialog = true
-                    }
+                    },
+                    userNames = userNames
                 )
             }
         }
@@ -114,7 +129,15 @@ fun AnnouncementScreen(navController: NavController) {
                 title = "Nowe ogłoszenie",
                 onConfirm = {
                     if (description.isNotBlank()) {
-                        announcements.add(Announcement(description, loggedInUser))
+                        val newOffer = Offer(userId = loggedInUserId, description = description)
+                        coroutineScope.launch {
+                            Log.i("AnnouncementScreen", "Adding offer: ${newOffer.offerId}")
+                            val result = offerService.addOffer(newOffer)
+                            if (result != null) {
+                                Log.i("AnnouncementScreen", "Adding offer ress: ${result.offerId}")
+                                offers.add(result)
+                            }
+                        }
                         description = ""
                     }
                     showAddDialog = false
@@ -132,22 +155,30 @@ fun AnnouncementScreen(navController: NavController) {
             )
         }
 
-        if (showEditDialog && selectedAnnouncement != null) {
+        if (showEditDialog && selectedOffer != null) {
             CustomModalDialog(
                 onDismiss = {
                     showEditDialog = false
-                    selectedAnnouncement = null
+                    selectedOffer = null
                 },
                 title = "Edytuj ogłoszenie",
                 onConfirm = {
-                    selectedAnnouncement?.let {
-                        val index = announcements.indexOf(it)
-                        if (index != -1) {
-                            announcements[index] = it.copy(description = editedDescription)
+                    selectedOffer?.let { offer ->
+                        val updatedOffer = Offer(
+                            offerId = offer.offerId,
+                            userId = offer.userId,
+                            description = editedDescription
+                        )
+                        coroutineScope.launch {
+                            offerService.updateOffer(updatedOffer)
+
+                            val refreshedOffers = offerService.getAllOffers()
+                            offers.clear()
+                            offers.addAll(refreshedOffers)
                         }
                     }
                     showEditDialog = false
-                    selectedAnnouncement = null
+                    selectedOffer = null
                 },
                 content = {
                     Text("Edytujesz jako: $loggedInUser", style = MaterialTheme.typography.bodyMedium)
@@ -162,42 +193,44 @@ fun AnnouncementScreen(navController: NavController) {
             )
         }
 
-        if (showDeleteDialog && selectedAnnouncement != null) {
+        if (showDeleteDialog && selectedOffer != null) {
             CustomModalDialog(
                 onDismiss = {
                     showDeleteDialog = false
-                    selectedAnnouncement = null
+                    selectedOffer = null
                 },
                 title = "Potwierdź usunięcie",
                 onConfirm = {
-                    announcements.remove(selectedAnnouncement)
+                    selectedOffer?.let { offer ->
+                        coroutineScope.launch {
+                            offerService.deleteOffer(offer)
+                            offers.removeAll { it.offerId == offer.offerId }
+                        }
+                    }
                     showDeleteDialog = false
-                    selectedAnnouncement = null
+                    selectedOffer = null
                 },
                 content = {
                     Text("Czy na pewno chcesz usunąć ogłoszenie?", style = MaterialTheme.typography.bodyMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("\"${selectedAnnouncement?.description}\"")
+                    Text("\"${selectedOffer?.description}\"")
                 }
             )
         }
     }
 }
-//
-data class Announcement(
-    val description: String,
-    val username: String
-)
 
 @Composable
-fun AnnouncementItem(
-    announcement: Announcement,
+fun OfferItem(
+    offer: Offer,
     isExpanded: Boolean,
     onClick: () -> Unit,
-    loggedInUser: String,
+    loggedInUserId: Int,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    userNames: Map<Int, String>
 ) {
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -207,7 +240,7 @@ fun AnnouncementItem(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = announcement.description.take(30) + if (announcement.description.length > 30) "..." else "",
+                    text = offer.description.take(30) + if (offer.description.length > 30) "..." else "",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -219,22 +252,29 @@ fun AnnouncementItem(
 
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("${announcement.description}")
-                Text("Dodane przez: ${announcement.username}")
+                Text(offer.description)
+                Spacer(modifier = Modifier.height(4.dp))
+
+                val name = userNames[offer.userId]
+                Text("Dodane przez: ${name ?: "Nieznany użytkownik"}")
+
+
+
+
                 Spacer(modifier = Modifier.height(8.dp))
-                if (announcement.username != loggedInUser) {
+                if (loggedInUserId != offer.userId) {
                     Button(onClick = {
-                        // TODO: dodać obsługę czatu z użytkownikiem udostępniającym ogłoszenie
+                        // TODO: dodaj obsługę wiadomości
                     }) {
                         Text("Napisz wiadomość")
                     }
                 } else {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = onEdit) {
-                            Text("Edytuj ogłoszenie")
+                            Text("Edytuj")
                         }
                         Button(onClick = onDelete) {
-                            Text("Usuń ogłoszenie")
+                            Text("Usuń")
                         }
                     }
                 }
