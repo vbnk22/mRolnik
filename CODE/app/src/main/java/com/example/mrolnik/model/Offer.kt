@@ -9,4 +9,9 @@ class Offer() {
         this.userId = userId
         this.description = description
     }
+    constructor(offerId: Int, userId: Int, description: String) : this() {
+        this.offerId = offerId
+        this.userId = userId
+        this.description = description
+    }
 }

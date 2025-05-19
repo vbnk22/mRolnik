@@ -93,4 +93,23 @@ class UserService {
             Log.e("PlannerService", "Updating user's plannerId error: ${e.message}")
         }
     }
+    suspend fun getNameFromId(userId: Int): String? {
+        return try {
+            val user: User = supabase
+                .from("user")
+                .select {
+                    filter {
+                        eq("userId", userId)
+                    }
+                    limit(1)
+                }
+                .decodeSingle()
+
+            "${user.firstName} ${user.lastName}"
+        } catch (e: Exception) {
+            Log.e("UserService", "getNameFromId error: ${e.message}")
+            null
+        }
+    }
+
 }
