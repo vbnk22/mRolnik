@@ -1,5 +1,8 @@
 package com.example.mrolnik.screen
 
+import android.annotation.SuppressLint
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -21,10 +24,13 @@ fun AnnouncementScreen(navController: NavController) {
     var expandedIndex by remember { mutableStateOf<Int?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
 
-    val backIcon = painterResource(R.drawable.baseline_arrow_back)
-    val addIcon = painterResource(id = R.drawable.baseline_add)
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedAnnouncement by remember { mutableStateOf<Announcement?>(null) }
+    var editedDescription by remember { mutableStateOf("") }
 
-    // TODO: Zastąp poniższy tekst dynamicznie zalogowanym użytkownikiem
+    val backIcon = painterResource(R.drawable.baseline_arrow_back)
+
     val loggedInUser = "Jan Kowalski"
 
     val announcements = remember {
@@ -88,7 +94,16 @@ fun AnnouncementScreen(navController: NavController) {
                     onClick = {
                         expandedIndex = if (expandedIndex == index) null else index
                     },
-                    loggedInUser = loggedInUser
+                    loggedInUser = loggedInUser,
+                    onEdit = {
+                        selectedAnnouncement = announcement
+                        editedDescription = announcement.description
+                        showEditDialog = true
+                    },
+                    onDelete = {
+                        selectedAnnouncement = announcement
+                        showDeleteDialog = true
+                    }
                 )
             }
         }
@@ -116,9 +131,59 @@ fun AnnouncementScreen(navController: NavController) {
                 }
             )
         }
+
+        if (showEditDialog && selectedAnnouncement != null) {
+            CustomModalDialog(
+                onDismiss = {
+                    showEditDialog = false
+                    selectedAnnouncement = null
+                },
+                title = "Edytuj ogłoszenie",
+                onConfirm = {
+                    selectedAnnouncement?.let {
+                        val index = announcements.indexOf(it)
+                        if (index != -1) {
+                            announcements[index] = it.copy(description = editedDescription)
+                        }
+                    }
+                    showEditDialog = false
+                    selectedAnnouncement = null
+                },
+                content = {
+                    Text("Edytujesz jako: $loggedInUser", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = editedDescription,
+                        onValueChange = { editedDescription = it },
+                        label = { Text("Nowa treść ogłoszenia") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            )
+        }
+
+        if (showDeleteDialog && selectedAnnouncement != null) {
+            CustomModalDialog(
+                onDismiss = {
+                    showDeleteDialog = false
+                    selectedAnnouncement = null
+                },
+                title = "Potwierdź usunięcie",
+                onConfirm = {
+                    announcements.remove(selectedAnnouncement)
+                    showDeleteDialog = false
+                    selectedAnnouncement = null
+                },
+                content = {
+                    Text("Czy na pewno chcesz usunąć ogłoszenie?", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("\"${selectedAnnouncement?.description}\"")
+                }
+            )
+        }
     }
 }
-
+//
 data class Announcement(
     val description: String,
     val username: String
@@ -129,7 +194,9 @@ fun AnnouncementItem(
     announcement: Announcement,
     isExpanded: Boolean,
     onClick: () -> Unit,
-    loggedInUser: String
+    loggedInUser: String,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -161,17 +228,12 @@ fun AnnouncementItem(
                     }) {
                         Text("Napisz wiadomość")
                     }
-                }
-                else{
-                    Row {
-                        Button(onClick = {
-
-                        }){
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = onEdit) {
                             Text("Edytuj ogłoszenie")
                         }
-                        Button(onClick = {
-
-                        }) {
+                        Button(onClick = onDelete) {
                             Text("Usuń ogłoszenie")
                         }
                     }
