@@ -183,7 +183,7 @@ fun AnnouncementScreen(navController: NavController) {
         }
     }
 }
-
+//
 data class Announcement(
     val description: String,
     val username: String
