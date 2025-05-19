@@ -7,6 +7,7 @@ import com.example.mrolnik.config.SupabaseClient
 import com.example.mrolnik.model.Planner
 import io.github.jan.supabase.postgrest.from
 
+
 class UserService {
     val supabase = SupabaseClient().getSupabaseClient()
 
@@ -23,6 +24,10 @@ class UserService {
 
         fun setLoggedUser(u: User) {
             user = u
+        }
+
+        fun getLoggedUser(): User {
+            return user
         }
     }
 
