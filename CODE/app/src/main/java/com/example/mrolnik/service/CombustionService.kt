@@ -45,10 +45,10 @@ class CombustionService {
         }
     }
 
-    suspend fun getAllCombustionsByVehicleId(vehicle: Vehicle?): List<Combustion> {
-        var cultivationsCombustions: List<Combustion> = emptyList()
+    suspend fun getCombustionByVehicleId(vehicle: Vehicle?): Combustion? {
+        var cultivationsCombustion: List<Combustion> = emptyList();
         try {
-            cultivationsCombustions = supabase.from("combustion")
+            cultivationsCombustion = supabase.from("combustion")
                 .select {
                     filter {
                         eq("vehicleId", vehicle!!.vehicleId)
@@ -58,7 +58,7 @@ class CombustionService {
         } catch (e: Exception) {
             Log.e("CombustionService", "Fetching vehicle's combustion error ${e.message}")
         }
-        return cultivationsCombustions
+        return cultivationsCombustion.firstOrNull()
     }
 
     suspend fun assignVehicleToCombustion(combustion: Combustion, vehicle: Vehicle?) {

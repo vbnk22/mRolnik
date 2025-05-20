@@ -38,8 +38,11 @@ import com.example.mrolnik.viewmodel.LocalSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 val combustionService = CombustionService()
+
+data class combustionInputField(val label: String, val value: String)
 
 @Composable
 fun VehicleInformationScreen(navController: NavController) {
@@ -51,16 +54,28 @@ fun VehicleInformationScreen(navController: NavController) {
     val addIcon = painterResource(id = R.drawable.baseline_add)
 
     var showEditInformationDialog by remember { mutableStateOf(false) }
+    var showAddInformationDialog by remember { mutableStateOf(false) }
+    var vehicleCombustion by remember { mutableStateOf<Combustion?>(null) }
+    var refreshTrigger by remember { mutableStateOf(0) }
 
+    // LISTA inputFieldów dla dodawania zasobu
+    val combustionsInputField = listOf(
+        combustionInputField("Ilość paliwa", ""),
+        combustionInputField("Przebieg", ""),
+        combustionInputField("Data pomiaru", "")
+    )
 
-    // Sztywne dane przykładowe
-    val fuel = 45.6
-    val mileage = 128000
-    val measurementDate = "2024-11-20"
+    // Lista z wartościami
+    var inputCombustionsFieldValues by remember { mutableStateOf(combustionsInputField.associateWith { it.value }) }
 
-    var newFuelValueText by remember { mutableStateOf(fuel.toString()) }
-    var newMileageValueText by remember { mutableStateOf(mileage.toString()) }
-    var newMeasurementDate by remember { mutableStateOf(measurementDate) }
+    fun refreshCombustion() {
+        CoroutineScope(Dispatchers.IO).launch {
+
+            withContext(Dispatchers.Main) {
+                vehicleCombustion = combustionService.getCombustionByVehicleId(currentVehicle)
+            }
+        }
+    }
 
     // TODO: tutaj możesz dać przycisk który tworzy dla tego pojazdu rekord w tabeli combusution a potem jeżeli jest to wyświetlić informacje
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -93,90 +108,164 @@ fun VehicleInformationScreen(navController: NavController) {
 
 
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(currentVehicle, refreshTrigger) {
             //TODO: DOdaj fetchowanie z tabeli combustion na chwile obecną te dane są na sztywno
-            CoroutineScope(Dispatchers.IO).launch {
-                combustionService.getAllCombustionsByVehicleId(currentVehicle)
-            }
+            refreshCombustion()
         }
 
         LazyColumn {
-            item {
-                if (currentVehicle != null) {
-                    Text(
-                        text = "Pojazd: ${currentVehicle.vehicleName}",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+            if(vehicleCombustion != null) {
 
-                    Text("Stan techniczny: ${currentVehicle.technicalCondition}")
-                    Text("Ilość paliwa: ${fuel} l")
-                    Text("Przebieg: ${mileage} km")
-                    Text("Data pomiaru: $measurementDate")
-                } else {
-                    Text("Nie wybrano pojazdu.")
-                }
+                    item {
+                        if (currentVehicle != null) {
+                            Text(
+                                text = "Pojazd: ${currentVehicle.vehicleName}",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text("Stan techniczny: ${currentVehicle.technicalCondition}")
+                            Text("Ilość paliwa: ${vehicleCombustion!!.amountOfFuel} l")
+                            Text("Przebieg: ${vehicleCombustion!!.mileage} km")
+                            Text("Data pomiaru: ${vehicleCombustion!!.measurementDate}")
+                        } else {
+                            Text("Nie wybrano pojazdu.")
+                        }
+                    }
+
+                    item{
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Button(
+                                onClick = {
+                                    showEditInformationDialog = true
+                                }
+                            ) {
+                                Text("Edytuj")
+                            }
+
+                            Button(
+                                onClick = {
+                                    // TODO: Obsłuż usuwanie danych
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        combustionService.deleteCombustion(vehicleCombustion!!)
+                                        withContext(Dispatchers.Main) {
+                                            refreshTrigger++
+                                        }
+                                   }
+                                    refreshCombustion()
+                                }
+                            ) {
+                                Text("Usuń")
+                            }
+                        }
+                    }
+            }else {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            if (showAddInformationDialog) {
+                                combustionsInputField.forEach { inputField ->
+                                    TextField(
+                                        value = inputCombustionsFieldValues[inputField] ?: "",
+                                        onValueChange = { newValue ->
+                                            inputCombustionsFieldValues =
+                                                inputCombustionsFieldValues.toMutableMap().apply {
+                                                    this[inputField] = newValue
+                                                }
+                                        },
+                                        label = { Text(inputField.label) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        placeholder = { Text("Wpisz ${inputField.label}") }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Button(onClick = {
+                                if (showAddInformationDialog) {
+                                    val fieldValues =
+                                        inputCombustionsFieldValues.mapKeys { it.key.label }
+
+                                    val mileage = fieldValues["Przebieg"]?.toDoubleOrNull() ?: 0.0
+                                    val amountOfFuel =
+                                        fieldValues["Ilość paliwa"]?.toDoubleOrNull() ?: 0.0
+                                    val measurementDate = fieldValues["Data pomiaru"] ?: ""
+
+                                    val combustion = Combustion(measurementDate, amountOfFuel, mileage)
+
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        combustionService.assignVehicleToCombustion(
+                                            combustion,
+                                            currentVehicle
+                                        )
+                                        withContext(Dispatchers.Main) {
+                                            showAddInformationDialog = false
+                                            refreshTrigger++
+                                        }
+                                    }
+                                } else {
+                                    showAddInformationDialog = true
+                                }
+                            }) {
+                                Text("Dodaj informację")
+                            }
+                        }
+                    }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = {
-                    showEditInformationDialog = true
-                }
-            ) {
-                Text("Edytuj")
-            }
-
-            Button(
-                onClick = {
-                    // TODO: Obsłuż usuwanie danych
-//                    CoroutineScope(Dispatchers.IO).launch {
-//                        combustionService.deleteCombustion(combustion)
-//                    }
-                }
-            ) {
-                Text("Usuń")
-            }
-        }
-
-        if (showEditInformationDialog) {
+            if (showEditInformationDialog) {
             CustomModalDialog(
                 onDismiss = { showEditInformationDialog = false },
                 title = "Edytuj: ${currentVehicle?.vehicleName}",
                 onConfirm = {
                     // TODO: zaimplementuj edycje w bazie danych potem możesz tylko odświeżyć pobranie danych
-                    showEditInformationDialog = false
+                    val fieldValues =
+                        inputCombustionsFieldValues.mapKeys { it.key.label }
+
+                    val mileage = fieldValues["Przebieg"]?.toDoubleOrNull() ?: 0.0
+                    val amountOfFuel =
+                        fieldValues["Ilość paliwa"]?.toDoubleOrNull() ?: 0.0
+                    val measurementDate = fieldValues["Data pomiaru"] ?: ""
+
+                    vehicleCombustion?.mileage = mileage
+                    vehicleCombustion?.measurementDate = measurementDate
+                    vehicleCombustion?.amountOfFuel = amountOfFuel
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        combustionService.updateCombustion(vehicleCombustion!!)
+                        withContext(Dispatchers.Main) {
+                            showEditInformationDialog = false
+                            refreshTrigger++
+                        }
+                    }
                 },
                 content = {
-
-                    TextField(
-                        value = newFuelValueText,
-                        onValueChange = { newFuelValueText = it },
-                        label = { Text("Ilość paliwa") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    TextField(
-                        value = newMileageValueText,
-                        onValueChange = { newMileageValueText = it },
-                        label = { Text("Przebieg") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    TextField(
-                        value = newMeasurementDate,
-                        onValueChange = { newMeasurementDate = it },
-                        label = { Text("Data pomiaru") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    combustionsInputField.forEach { inputField ->
+                        TextField(
+                            value = inputCombustionsFieldValues[inputField] ?: "",
+                            onValueChange = { newValue ->
+                                inputCombustionsFieldValues = inputCombustionsFieldValues.toMutableMap().apply {
+                                    this[inputField] = newValue
+                                }
+                            },
+                            label = { Text(inputField.label) },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Wpisz ${inputField.label}") }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             )
         }
