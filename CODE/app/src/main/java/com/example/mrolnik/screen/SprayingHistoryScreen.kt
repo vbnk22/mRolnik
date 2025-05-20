@@ -36,16 +36,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
-//import com.example.mrolnik.model.FruitTree
+import com.example.mrolnik.service.SprayingService
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
-
-data class Spraying (
-    val sprayingDate: String,
-    val sprayingName: String,
-    val sprayingQuantity: Double
-)
+import com.example.mrolnik.model.Spraying
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 
 data class sprayingInputField(val label: String, val value: String)
+val sprayingService = SprayingService()
 
 @Composable
 fun SprayingHistoryScreen(navController: NavController) {
@@ -61,23 +61,13 @@ fun SprayingHistoryScreen(navController: NavController) {
     var showAddSprayingDialog by remember { mutableStateOf(false) }
 
 
-    val sprayings by remember {
-        mutableStateOf(
-            listOf(
-                Spraying("2024-04-10", "Oprysk przeciw mszycom", 1.2),
-                Spraying("2024-04-25", "Fungicyd na parch jabłoni", 1.5),
-                Spraying("2024-05-05", "Nawóz dolistny mikroelementowy", 2.0),
-                Spraying("2024-05-20", "Oprysk przeciw grzybom", 1.8),
-                Spraying("2024-06-01", "Środek na zwójkę liściową", 1.3)
-            )
-        )
-    }
+    var sprayings by remember { mutableStateOf(emptyList<Spraying>()) }
 
     // LISTA inputFieldów dla dodawania zasobu
     val sprayingsInputField = listOf(
         sprayingInputField("Nazwa oprysku", ""),
         sprayingInputField("Data oprysku", ""),
-        sprayingInputField("Ilośc oprysków", ""),
+        sprayingInputField("Ilość oprysków", ""),
     )
 
     // Lista z wartościami
@@ -123,7 +113,7 @@ fun SprayingHistoryScreen(navController: NavController) {
 
 
         LaunchedEffect(Unit) {
-            //TODO: Fetchowanie danych o opryskach
+            sprayings = sprayingService.getAllSprayingByFruitTreeId(currentFruitTree)
         }
 
         LazyColumn {
@@ -149,8 +139,19 @@ fun SprayingHistoryScreen(navController: NavController) {
                 onDismiss = { showAddSprayingDialog = false },
                 title = "Dodaj oprysk",
                 onConfirm = {
-                    // TODO: zrobić dodawanie naprawy możesz użyć currentVehicle.vehicleId
-                    // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
+                    val fieldValues = inputSprayingsFieldValues.mapKeys { it.key.label }
+
+                    val name = fieldValues["Nazwa oprysku"] ?: ""
+                    val date = fieldValues["Data oprysku"] ?: ""
+                    val quantity = fieldValues["Ilość oprysków"]?.toDoubleOrNull() ?: 0.0
+
+                    val spraying = Spraying(name, LocalDate.parse(date).toString(), quantity)
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        sprayingService.assignSprayingToFruitTree(spraying, currentFruitTree)
+                        sprayings = sprayingService.getAllSprayingByFruitTreeId(currentFruitTree)
+                    }
+                    showAddSprayingDialog = false
                 },
                 content = {
                     sprayingsInputField.forEach { inputField ->
@@ -187,23 +188,13 @@ fun SprayingCultivationHistoryScreen(navController: NavController){
     var showAddSprayingDialog by remember { mutableStateOf(false) }
 
 
-    val sprayings by remember {
-        mutableStateOf(
-            listOf(
-                Spraying("2024-04-10", "Oprysk przeciw mszycom", 1.2),
-                Spraying("2024-04-25", "Fungicyd na parch jabłoni", 1.5),
-                Spraying("2024-05-05", "Nawóz dolistny mikroelementowy", 2.0),
-                Spraying("2024-05-20", "Oprysk przeciw grzybom", 1.8),
-                Spraying("2024-06-01", "Środek na zwójkę liściową", 1.3)
-            )
-        )
-    }
+    var sprayings by remember { mutableStateOf(emptyList<Spraying>()) }
 
     // LISTA inputFieldów dla dodawania zasobu
     val sprayingsInputField = listOf(
         sprayingInputField("Nazwa oprysku", ""),
         sprayingInputField("Data oprysku", ""),
-        sprayingInputField("Ilośc oprysków", ""),
+        sprayingInputField("Ilość oprysków", ""),
     )
 
     // Lista z wartościami
@@ -249,7 +240,7 @@ fun SprayingCultivationHistoryScreen(navController: NavController){
 
 
         LaunchedEffect(Unit) {
-            //TODO: Fetchowanie danych o opryskach
+            sprayings = sprayingService.getAllSprayingByCultivationId(currentCultivation)
         }
 
         LazyColumn {
@@ -275,8 +266,19 @@ fun SprayingCultivationHistoryScreen(navController: NavController){
                 onDismiss = { showAddSprayingDialog = false },
                 title = "Dodaj oprysk",
                 onConfirm = {
-                    // TODO: zrobić dodawanie naprawy możesz użyć currentVehicle.vehicleId
-                    // Jest zrobione tak jak w edycjach za pomocą CustomDialog wiec chyba możesz przekopiować i pozmieniać niektóre elementy
+                    val fieldValues = inputSprayingsFieldValues.mapKeys { it.key.label }
+
+                    val name = fieldValues["Nazwa oprysku"] ?: ""
+                    val date = fieldValues["Data oprysku"] ?: ""
+                    val quantity = fieldValues["Ilość oprysków"]?.toDoubleOrNull() ?: 0.0
+
+                    val spraying = Spraying(name, LocalDate.parse(date).toString(), quantity)
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        sprayingService.assignSprayingToCultivation(spraying, currentCultivation)
+                        sprayings = sprayingService.getAllSprayingByCultivationId(currentCultivation)
+                    }
+                    showAddSprayingDialog = false
                 },
                 content = {
                     sprayingsInputField.forEach { inputField ->
@@ -307,14 +309,14 @@ fun SprayingItem(
     var showEditSprayingDialog by remember { mutableStateOf(false) }
 
 
-    // TODO: LISTA inputFieldów dla dodawania zasobu
+    // LISTA inputFieldów dla dodawania zasobu
     val sprayingsInputField = listOf(
         sprayingInputField("Nazwa oprysku", spraying.sprayingName),
         sprayingInputField("Data oprysku", spraying.sprayingDate),
-        sprayingInputField("Jakość oprysków", spraying.sprayingQuantity.toString()),
+        sprayingInputField("Ilość oprysków", spraying.sprayingQuantity.toString()),
     )
 
-    // TODO: Lista z wartościami
+    // Lista z wartościami
     var inputSprayingsFieldValues by remember { mutableStateOf(sprayingsInputField.associateWith { it.value }) }
 
     Card(
@@ -356,7 +358,12 @@ fun SprayingItem(
                         Text("Edytuj")
                     }
 
-                    Button(onClick = { /* TODO: Logika usuwania */ }) {
+                    Button(onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            // TODO odswiezenie listy po usunieciu
+                            sprayingService.deleteSpraying(spraying)
+                        }
+                    }) {
                         Text("Usuń")
                     }
                 }
@@ -366,7 +373,17 @@ fun SprayingItem(
                     onDismiss = { showEditSprayingDialog = false },
                     title = "Edytuj: ${spraying.sprayingName}",
                     onConfirm = {
-                        // TODO implementacja edycji danych
+                        val fieldValues = inputSprayingsFieldValues.mapKeys { it.key.label }
+                        val name = fieldValues["Nazwa oprysku"] ?: ""
+                        val date = fieldValues["Data oprysku"] ?: ""
+                        val quantity = fieldValues["Ilość oprysków"]?.toDoubleOrNull() ?: 0.0
+                        spraying.sprayingName = name
+                        spraying.sprayingDate = date
+                        spraying.sprayingQuantity = quantity
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            sprayingService.updateSpraying(spraying)
+                        }
 
                         showEditSprayingDialog = false },
                     content = {

@@ -21,14 +21,17 @@ import androidx.compose.ui.Modifier
 //import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-
-data class Fertilizer(
-    val date: String,
-    val name: String,
-    val quantity: Double
-)
+import com.example.mrolnik.service.FertilizerService
+import com.example.mrolnik.model.Fertilizer
+import com.example.mrolnik.model.Spraying
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 
 data class fertilizerInputField(val label: String, val value: String)
+
+val fertilizerService = FertilizerService()
 
 @Composable
 fun FertilizerHistoryScreen(navController: NavController) {
@@ -42,15 +45,7 @@ fun FertilizerHistoryScreen(navController: NavController) {
     var expandedIndex by remember { mutableStateOf<Int?>(null) }
     var showAddFertilizerDialog by remember { mutableStateOf(false) }
 
-    val fertilizers by remember {
-        mutableStateOf(
-            listOf(
-                Fertilizer("2024-03-10", "Saletra wapniowa", 5.0),
-                Fertilizer("2024-04-15", "Azofoska", 4.5),
-                Fertilizer("2024-05-01", "Obornik granulowany", 10.0)
-            )
-        )
-    }
+    var fertilizers by remember { mutableStateOf(emptyList<Fertilizer>()) }
 
     val fertilizersInputField = listOf(
         fertilizerInputField("Nazwa nawozu", ""),
@@ -116,6 +111,19 @@ fun FertilizerHistoryScreen(navController: NavController) {
                 title = "Dodaj nawóz",
                 onConfirm = {
                     // TODO: Dodanie nawozu do pola
+                    val fieldValues = inputFertilizerFieldValues.mapKeys { it.key.label }
+
+                    val name = fieldValues["Nazwa nawozu"] ?: ""
+                    val date = fieldValues["Data nawożenia"] ?: ""
+                    val quantity = fieldValues["Ilość nawozu"]?.toDoubleOrNull() ?: 0.0
+
+                    val fertilizer = Fertilizer(name, LocalDate.parse(date).toString(), quantity)
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        fertilizerService.assignFertilizerToCultivation(fertilizer, currentCultivation)
+                        fertilizers = fertilizerService.getAllFertilizersByCultivationId(currentCultivation)
+                    }
+                    showAddFertilizerDialog = false
                 },
                 content = {
                     fertilizersInputField.forEach { inputField ->
@@ -146,9 +154,9 @@ fun FertilizerItem(
     var showEditDialog by remember { mutableStateOf(false) }
 
     val inputFields = listOf(
-        fertilizerInputField("Nazwa nawozu", fertilizer.name),
-        fertilizerInputField("Data nawożenia", fertilizer.date),
-        fertilizerInputField("Ilość nawozu (kg)", fertilizer.quantity.toString())
+        fertilizerInputField("Nazwa nawozu", fertilizer.fertilizerName),
+        fertilizerInputField("Data nawożenia", fertilizer.fertilizingDate),
+        fertilizerInputField("Ilość nawozu", fertilizer.fertilizerQuantity.toString())
     )
 
     var inputValues by remember {
@@ -164,7 +172,7 @@ fun FertilizerItem(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = fertilizer.name,
+                    text = fertilizer.fertilizerName,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -176,9 +184,9 @@ fun FertilizerItem(
 
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Nazwa nawozu: ${fertilizer.name}")
-                Text("Data nawożenia: ${fertilizer.date}")
-                Text("Ilość nawozu: ${fertilizer.quantity} kg")
+                Text("Nazwa nawozu: ${fertilizer.fertilizerName}")
+                Text("Data nawożenia: ${fertilizer.fertilizingDate}")
+                Text("Ilość nawozu: ${fertilizer.fertilizerQuantity} kg")
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
@@ -188,7 +196,13 @@ fun FertilizerItem(
                     Button(onClick = { showEditDialog = true }) {
                         Text("Edytuj")
                     }
-                    Button(onClick = { /* TODO: obsługa usuwania nawozu */ }) {
+                    Button(onClick = {
+                    /* TODO: obsługa usuwania nawozu */
+                        CoroutineScope(Dispatchers.IO).launch {
+                            // TODO odswiezenie listy po usunieciu
+                            fertilizerService.deleteFertilizer(fertilizer)
+                        }
+                    }) {
                         Text("Usuń")
                     }
                 }
@@ -197,9 +211,21 @@ fun FertilizerItem(
             if (showEditDialog) {
                 CustomModalDialog(
                     onDismiss = { showEditDialog = false },
-                    title = "Edytuj: ${fertilizer.name}",
+                    title = "Edytuj: ${fertilizer.fertilizerName}",
                     onConfirm = {
                         // TODO: obsługa edycji nawozu
+
+                        val fieldValues = inputValues.mapKeys { it.key.label }
+                        val name = fieldValues["Nazwa nawozu"] ?: ""
+                        val date = fieldValues["Data nawożenia"] ?: ""
+                        val quantity = fieldValues["Ilość nawozu"]?.toDoubleOrNull() ?: 0.0
+                        fertilizer.fertilizerName = name
+                        fertilizer.fertilizingDate = date
+                        fertilizer.fertilizerQuantity = quantity
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            fertilizerService.updateFertilizer(fertilizer)
+                        }
                         showEditDialog = false
                     },
                     content = {

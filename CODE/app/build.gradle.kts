@@ -110,8 +110,8 @@ dependencies {
 
 
     implementation("org.jetbrains.kotlin:kotlin-test:2.0.0")
-    testImplementation("org.mockito:mockito-core:5.0.0")  // Główna zależność dla mockowania
-    testImplementation("org.mockito:mockito-inline:5.0.0") // Opcjonalne, pozwala na mockowanie finalnych metod i klas
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0") // Jeśli używasz JUnit 5 (Jupiter)
+    testImplementation("org.mockito:mockito-core:5.0.0")
+    testImplementation("org.mockito:mockito-inline:5.0.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.7.0")
 }

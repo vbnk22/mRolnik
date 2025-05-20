@@ -142,7 +142,6 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
                     val description = fieldValues["Opis"] ?: ""
                     val cost = fieldValues["Koszt"]?.toDoubleOrNull() ?: 0.0
                     val date = fieldValues["Data naprawy"] ?: ""
-                    Log.i("VehicleRepairHistScreen", "dane: opis ${description}, koszt ${cost}, data ${date}.")
 
                     val repair = Repair(LocalDate.parse(date).toString(), description, cost)
 
