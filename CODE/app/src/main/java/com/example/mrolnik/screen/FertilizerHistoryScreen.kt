@@ -110,7 +110,6 @@ fun FertilizerHistoryScreen(navController: NavController) {
                 onDismiss = { showAddFertilizerDialog = false },
                 title = "Dodaj nawóz",
                 onConfirm = {
-                    // TODO: Dodanie nawozu do pola
                     val fieldValues = inputFertilizerFieldValues.mapKeys { it.key.label }
 
                     val name = fieldValues["Nazwa nawozu"] ?: ""
@@ -197,7 +196,6 @@ fun FertilizerItem(
                         Text("Edytuj")
                     }
                     Button(onClick = {
-                    /* TODO: obsługa usuwania nawozu */
                         CoroutineScope(Dispatchers.IO).launch {
                             // TODO odswiezenie listy po usunieciu
                             fertilizerService.deleteFertilizer(fertilizer)
@@ -213,8 +211,6 @@ fun FertilizerItem(
                     onDismiss = { showEditDialog = false },
                     title = "Edytuj: ${fertilizer.fertilizerName}",
                     onConfirm = {
-                        // TODO: obsługa edycji nawozu
-
                         val fieldValues = inputValues.mapKeys { it.key.label }
                         val name = fieldValues["Nazwa nawozu"] ?: ""
                         val date = fieldValues["Data nawożenia"] ?: ""
