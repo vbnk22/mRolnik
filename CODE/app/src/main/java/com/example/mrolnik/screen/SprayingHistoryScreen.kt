@@ -110,8 +110,6 @@ fun SprayingHistoryScreen(navController: NavController) {
             )
         }
 
-
-
         LaunchedEffect(Unit) {
             sprayings = sprayingService.getAllSprayingByFruitTreeId(currentFruitTree)
         }

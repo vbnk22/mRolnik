@@ -93,6 +93,10 @@ fun FertilizerHistoryScreen(navController: NavController) {
             )
         }
 
+        LaunchedEffect(Unit) {
+            fertilizers = fertilizerService.getAllFertilizersByCultivationId(currentCultivation)
+        }
+
         LazyColumn {
             items(fertilizers) { fertilizer ->
                 FertilizerItem(
