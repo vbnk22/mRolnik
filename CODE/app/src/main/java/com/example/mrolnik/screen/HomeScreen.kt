@@ -48,7 +48,7 @@ fun HomeScreen() {
             FieldManagementScreen(navController)
         }
         composable("marketplace") {
-            MarketplaceScreen()
+            MarketplaceScreen(navController)
         }
         composable("orchard") {
             OrchardManagementScreen(navController)

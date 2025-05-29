@@ -108,7 +108,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.material:material-icons-extended:<version>")
 
-
+    implementation ("io.coil-kt:coil-compose:2.4.0")
     implementation("org.jetbrains.kotlin:kotlin-test:2.0.0")
     testImplementation("org.mockito:mockito-core:5.0.0")
     testImplementation("org.mockito:mockito-inline:5.0.0")
