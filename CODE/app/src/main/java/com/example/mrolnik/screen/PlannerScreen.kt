@@ -504,8 +504,7 @@ fun TaskList(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+                        .padding(vertical = 4.dp)
                 ) {
                     Row(
                         modifier = Modifier

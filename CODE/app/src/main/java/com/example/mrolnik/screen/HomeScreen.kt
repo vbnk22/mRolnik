@@ -18,9 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +44,7 @@ fun HomeScreen() {
             AnimalsManagementScreen(navController)
         }
         composable("chat") {
-            ChatScreen()
+            ChatScreen(navController)
         }
         composable("fields") {
             FieldManagementScreen(navController)
@@ -89,6 +91,23 @@ fun HomeScreen() {
         composable("sprayingCultivationHistory"){
             SprayingCultivationHistoryScreen(navController)
         }
+        composable(
+            "chatMessages/{chatRoomId}/{otherUserName}",
+            arguments = listOf(
+                navArgument("chatRoomId") { type = NavType.IntType },
+                navArgument("otherUserName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val chatRoomId = backStackEntry.arguments?.getInt("chatRoomId") ?: 0
+            val otherUserName = backStackEntry.arguments?.getString("otherUserName") ?: ""
+            ChatMessagesScreen(
+                chatRoomId = chatRoomId,
+                otherUserName = otherUserName,
+                navController = navController // ← to jest kluczowe
+            )
+        }
+
+
     }
 }
 
