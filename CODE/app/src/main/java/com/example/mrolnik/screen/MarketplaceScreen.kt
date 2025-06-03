@@ -1,5 +1,7 @@
 package com.example.mrolnik.screen
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -7,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -19,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,76 +34,63 @@ import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.example.mrolnik.R
 import com.example.mrolnik.model.Offer
+import com.example.mrolnik.service.MarketplaceService
 import com.example.mrolnik.service.UserService
 import com.example.mrolnik.service.OfferService
+import com.example.mrolnik.model.MarketplaceItem
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
-data class MarketplaceItem(
-    val id: Int,
-    val title: String,
-    val description: String,
-    val price: Double,
-    val imageURL: String? = null,
-    val publicationDate: String = "",
-    val location: String = "",
-    val seller: String = "",
-    val isActive: Boolean = true
-)
-
-data class marketplaceOffertInputField(val label: String, val value: String)
-
+var userService = UserService()
+var marketplaceService = MarketplaceService()
 @Composable
-fun MarketplaceScreen(navController: NavController) {
-    val sampleItems = listOf(
-        MarketplaceItem(
-            id = 1,
-            title = "iPhone 14 Pro - stan idealny",
-            description = "Sprzedam iPhone 14 Pro w kolorze Space Black. Telefon używany przez 6 miesięcy, zawsze w etui i z folią ochronną. Bateria w idealnym stanie - 100% pojemności.",
-            price = 3500.0,
-            imageURL = "https://example.com/iphone.jpg",
-            publicationDate = "2024-01-15",
-            location = "Warszawa, Mokotów",
-            seller = "Jan Kowalski",
-            isActive = true
-        ),
-        MarketplaceItem(
-            id = 2,
-            title = "Rower górski Trek X-Caliber 8",
-            description = "Sprzedam rower górski w bardzo dobrym stanie. Przejechane około 2000 km. Regularnie serwisowany.",
-            price = 2800.0,
-            imageURL = null, // brak obrazka
-            publicationDate = "2024-01-10",
-            location = "Kraków",
-            seller = "Anna Nowak",
-            isActive = false
-        )
-    )
 
+fun MarketplaceScreen(navController: NavController) {
     // Form fields
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
-    var imageURL by remember { mutableStateOf("") }
+    var image by remember { mutableStateOf("") }
     var publicationDate by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var isActive by remember { mutableStateOf(true) }
     val userNames = remember { mutableStateMapOf<Int, String>() }
 
-    val coroutineScope = rememberCoroutineScope()
     var expandedItemId by remember { mutableStateOf<Int?>(null) }
 
     val loggedInUser = UserService.getLoggedUser().firstName + " " + UserService.getLoggedUser().lastName
     val loggedInUserId:Int = UserService.getLoggedUserId()
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var itemBeingEdited by remember { mutableStateOf<MarketplaceItem?>(null) }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
+    val coroutineScope = rememberCoroutineScope()
+    var marketplaceItems by remember { mutableStateOf<List<MarketplaceItem>>(emptyList()) }
+    val context = LocalContext.current
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
 
     LaunchedEffect(Unit) {
+        try {
+            Log.d("Marketplace", "Pobieram oferty...")
+            val items = marketplaceService.getAllMarketplaceItems()
+            Log.d("Marketplace", "Pobrano: ${items.size}")
+            marketplaceItems = items
 
+        } catch (e: Exception) {
+            Log.e("MarketplaceScreen", "Błąd przy pobieraniu ofert: ${e.message}")
+        }
     }
+
 
     var showOnlyMyOffers by remember { mutableStateOf(false) }
 
@@ -125,7 +117,21 @@ fun MarketplaceScreen(navController: NavController) {
             Button(onClick = { showAddDialog = true }) {
                 Text("Dodaj ofertę")
             }
-            Button(onClick = { showOnlyMyOffers = !showOnlyMyOffers }) {
+            Button(onClick = {
+                showOnlyMyOffers = !showOnlyMyOffers
+
+                coroutineScope.launch {
+                    try {
+                        marketplaceItems = if (showOnlyMyOffers) {
+                            marketplaceService.getMarketplaceItemsByUserId(UserService.getLoggedUserId())
+                        } else {
+                            marketplaceService.getAllMarketplaceItems()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MarketplaceScreen", "Błąd przy filtrowaniu ofert: ${e.message}")
+                    }
+                }
+            }) {
                 Text(if (showOnlyMyOffers) "Wszystkie oferty" else "Moje oferty")
             }
         }
@@ -138,48 +144,112 @@ fun MarketplaceScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(sampleItems.size) { index ->
-                val item = sampleItems[index]
+            items(marketplaceItems.size) { index ->
+                val item = marketplaceItems[index]
                 MarketplaceItemCard(
                     item = item,
-                    isExpanded = expandedItemId == item.id,
+                    isExpanded = expandedItemId == item.marketplaceItemId,
                     onClick = {
-                        expandedItemId = if (expandedItemId == item.id) null else item.id
+                        expandedItemId = if (expandedItemId == item.marketplaceItemId) null else item.marketplaceItemId
                     },
                     onMessageClick = {
-                        // Obsługa kliknięcia w przycisk wiadomości
-                        // Tutaj możesz dodać nawigację do ekranu czatu
+                        // Nawigacja do czatu lub inne akcje
+                    },
+                    onDelete = { itemToDelete ->
+                        coroutineScope.launch {
+                            try {
+                                marketplaceService.deleteMarketplaceItem(itemToDelete)
+                                marketplaceItems = marketplaceItems.filterNot {
+                                    it.marketplaceItemId == itemToDelete.marketplaceItemId
+                                }
+                            } catch (e: Exception) {
+                                Log.e("MarketplaceScreen", "Błąd przy usuwaniu oferty: ${e.message}")
+                            }
+                        }
+                    },
+                    onUpdate = { updatedItem ->
+                        coroutineScope.launch {
+                            try {
+                                marketplaceService.updateMarketplaceItem(updatedItem)
+                                Log.d("MarketplaceScreen", "Oferta zaktualizowana: ${updatedItem.title}")
+                                marketplaceItems = marketplaceItems.map {
+                                    if (it.marketplaceItemId == updatedItem.marketplaceItemId) updatedItem else it
+                                }
+                            } catch (e: Exception) {
+                                Log.e("MarketplaceScreen", "Błąd przy aktualizacji oferty: ${e.message}")
+                            }
+                        }
                     }
                 )
             }
         }
+        fun uriToByteArray(context: Context, uri: Uri): ByteArray {
+            return context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                inputStream.readBytes()
+            } ?: ByteArray(0)
+        }
+
 
         if (showAddDialog) {
             CustomModalDialog(
                 onDismiss = { showAddDialog = false },
                 title = "Nowe ogłoszenie",
+
                 onConfirm = {
                     if (title.isNotBlank() && description.isNotBlank()) {
-                        val newItem = MarketplaceItem(
-                            title = title,
-                            description = description,
-                            price = price.toDoubleOrNull() ?: 0.0,
-                            imageURL = imageURL.ifBlank { null },
-                            publicationDate = publicationDate,
-                            location = location,
-                            isActive = isActive,
-                            id = 3,
-                            seller = "Jan Nowak",
-                        )
+                        // Przygotuj plik obrazu z selectedImageUri, jeśli jest
+                        val success = if (selectedImageUri != null) {
+                            // Konwersja URI na ByteArray i nazwa pliku (np. tytuł lub timestamp)
+                            val imageBytes = uriToByteArray(context, selectedImageUri!!)
+                            val imageName = "image_${System.currentTimeMillis()}"
 
+                            // Wywołaj suspend function addMarketplaceItem
+                            runBlocking {
+                                marketplaceService.addMarketplaceItem(
+                                    MarketplaceItem(
+                                        userId = UserService.getLoggedUserId(),
+                                        title = title,
+                                        description = description,
+                                        price = price.toDoubleOrNull() ?: 0.0,
+                                        image = null, // imageURL ustawisz po uploadzie w bazie, więc tutaj null
+                                        publicationDate = publicationDate,
+                                        location = location,
+                                        isActive = isActive
+                                    ),
+                                    imageBytes,
+                                    imageName
+                                )
+                            }
+                        } else {
+                            // Jeśli brak obrazka, możesz dodać item bez imageBytes i imageName (inny wariant metody)
+                            runBlocking {
+                                marketplaceService.addMarketplaceItem(
+                                    MarketplaceItem(
+                                        userId = UserService.getLoggedUserId(),
+                                        title = title,
+                                        description = description,
+                                        price = price.toDoubleOrNull() ?: 0.0,
+                                        image = null,
+                                        publicationDate = publicationDate,
+                                        location = location,
+                                        isActive = isActive
+                                    ),
+                                    ByteArray(0), // lub zmodyfikuj funkcję by obsługiwała brak obrazka
+                                    ""
+                                )
+                            }
+                        }
+
+                        // Wyczyść pola
                         title = ""
                         description = ""
                         price = ""
-                        imageURL = ""
                         publicationDate = ""
                         location = ""
                         isActive = true
+                        selectedImageUri = null
                     }
+
                     showAddDialog = false
                 },
                 content = {
@@ -193,12 +263,17 @@ fun MarketplaceScreen(navController: NavController) {
                         Spacer(modifier = Modifier.height(8.dp))
                         TextField(value = price, onValueChange = { price = it }, label = { Text("Cena") })
                         Spacer(modifier = Modifier.height(8.dp))
-                        TextField(value = imageURL, onValueChange = { imageURL = it }, label = { Text("URL obrazka") })
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { imagePickerLauncher.launch("image/*") }) {
+                            Text(text = "Wybierz obrazek")
+                        }
+                        selectedImageUri?.let { uri ->
+                            Text(text = "Wybrano obrazek: ${uri.lastPathSegment ?: uri.toString()}")
+                        }
                         TextField(value = publicationDate, onValueChange = { publicationDate = it }, label = { Text("Data publikacji") })
                         Spacer(modifier = Modifier.height(8.dp))
                         TextField(value = location, onValueChange = { location = it }, label = { Text("Lokalizacja") })
                         Spacer(modifier = Modifier.height(8.dp))
+
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = isActive, onCheckedChange = { isActive = it })
                             Text("Aktywne")
@@ -217,6 +292,8 @@ fun MarketplaceItemCard(
     isExpanded: Boolean = false,
     onClick: () -> Unit = {},
     onMessageClick: () -> Unit = {},
+    onDelete: (MarketplaceItem) -> Unit = {},
+    onUpdate: (MarketplaceItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
 
@@ -237,9 +314,9 @@ fun MarketplaceItemCard(
                     .fillMaxWidth()
                     .height(200.dp)
             ) {
-                if (item.imageURL != null) {
+                if (item.image != null) {
                     SubcomposeAsyncImage(
-                        model = item.imageURL,
+                        model = item.image,
                         contentDescription = item.title,
                         modifier = Modifier
                             .fillMaxSize()
@@ -387,25 +464,36 @@ fun MarketplaceItemCard(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                     }
+                    // SPRZEDAJĄCY
+                    val sellerName = remember { mutableStateOf("") }
 
-                    // Sprzedawca
-                    if (item.seller.isNotBlank()) {
+                    LaunchedEffect(item.userId) {
+                        try {
+                            val name = userService.getNameFromId(item.userId)
+                            sellerName.value = name ?: ""
+                        } catch (e: Exception) {
+                            Log.e("MarketplaceScreen", "Nie udało się pobrać imienia i nazwiska: ${e.message}")
+                        }
+                    }
+
+                    if (sellerName.value.isNotBlank()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Sprzedawca: ",
+                                text = "Sprzedający: ",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = item.seller,
+                                text = sellerName.value,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                     }
+
 
                     // Status aktywności
                     Row(
@@ -449,7 +537,7 @@ fun MarketplaceItemCard(
 
                     Button(
                         onClick = {
-                        //TODO: Usuwanie oferty
+                            onDelete(item)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp)
@@ -463,7 +551,6 @@ fun MarketplaceItemCard(
                 var editedTitle by remember { mutableStateOf(item.title) }
                 var editedDescription by remember { mutableStateOf(item.description) }
                 var editedPrice by remember { mutableStateOf(item.price.toString()) }
-                var editedImageURL by remember { mutableStateOf(item.imageURL ?: "") }
                 var editedPublicationDate by remember { mutableStateOf(item.publicationDate) }
                 var editedLocation by remember { mutableStateOf(item.location) }
                 var editedIsActive by remember { mutableStateOf(item.isActive) }
@@ -472,19 +559,21 @@ fun MarketplaceItemCard(
                     onDismiss = { showEditDialog = false },
                     title = "Edytuj ogłoszenie",
                     onConfirm = {
-                        val updatedItem = item.copy(
+                        val updatedItem = MarketplaceItem(
+                            userId = item.userId,
                             title = editedTitle,
                             description = editedDescription,
                             price = editedPrice.toDoubleOrNull() ?: 0.0,
-                            imageURL = editedImageURL.ifBlank { null },
+                            image = item.image,
                             publicationDate = editedPublicationDate,
                             location = editedLocation,
                             isActive = editedIsActive
                         )
+                        updatedItem.marketplaceItemId = item.marketplaceItemId
 
-                        // Tutaj możesz wysłać aktualizację do bazy lub przekazać przez callback
+
                         // Przykład:
-                        // onUpdate(updatedItem)
+                        onUpdate(updatedItem)
 
                         showEditDialog = false
                     },
@@ -495,8 +584,6 @@ fun MarketplaceItemCard(
                             TextField(value = editedDescription, onValueChange = { editedDescription = it }, label = { Text("Opis") })
                             Spacer(modifier = Modifier.height(8.dp))
                             TextField(value = editedPrice, onValueChange = { editedPrice = it }, label = { Text("Cena") })
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TextField(value = editedImageURL, onValueChange = { editedImageURL = it }, label = { Text("URL obrazka") })
                             Spacer(modifier = Modifier.height(8.dp))
                             TextField(value = editedPublicationDate, onValueChange = { editedPublicationDate = it }, label = { Text("Data publikacji") })
                             Spacer(modifier = Modifier.height(8.dp))

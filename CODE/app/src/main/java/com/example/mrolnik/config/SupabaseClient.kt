@@ -2,6 +2,8 @@ package com.example.mrolnik.config
 
 import io.github.cdimascio.dotenv.dotenv
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.storage.storage
+import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.serializer.JacksonSerializer
@@ -21,6 +23,7 @@ class SupabaseClient {
         if (supabase == null) {
             supabase = createSupabaseClient(supabaseUrl, supabaseKey) {
                 install(Postgrest)
+                install(Storage)
                 defaultSerializer = JacksonSerializer()
             }
         }
