@@ -94,4 +94,5 @@ class AnimalService {
             Log.e("AnimalService", "Deleting animal error ${e.message}")
         }
     }
+
 }
