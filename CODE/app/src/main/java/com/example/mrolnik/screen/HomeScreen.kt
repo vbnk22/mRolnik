@@ -106,8 +106,6 @@ fun HomeScreen() {
                 navController = navController // ← to jest kluczowe
             )
         }
-
-
     }
 }
 

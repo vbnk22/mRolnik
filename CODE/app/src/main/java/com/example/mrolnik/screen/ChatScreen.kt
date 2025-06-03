@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -14,18 +15,21 @@ import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.Chat
 import com.example.mrolnik.model.ChatRoom
+import com.example.mrolnik.model.Fertilizer
+import com.example.mrolnik.model.Offer
+import com.example.mrolnik.service.ChatService
+import com.example.mrolnik.service.UserService
+import com.example.mrolnik.service.userService
 import com.example.mrolnik.viewmodel.LocalSharedViewModel
 
+val chatService = ChatService()
+val currentUserId = UserService.getLoggedUserId()
 @Composable
 fun ChatScreen(navController: NavController) {
     // TODO: Zamień na rzeczywiste dane z bazy danych (np. Firebase)
-    val chatRooms = remember {
-        listOf(
-            ChatRoom(chatRoomId = 1, firstUserId = 1, secondUserId = 2),
-            ChatRoom(chatRoomId = 2, firstUserId = 1, secondUserId = 3),
-        )
-    }
+    var chatRooms by remember {mutableStateOf(emptyList<ChatRoom>())}
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
+
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -55,6 +59,10 @@ fun ChatScreen(navController: NavController) {
         }
         Text("Twoje pokoje czatu", style = MaterialTheme.typography.headlineSmall)
 
+        LaunchedEffect(Unit) {
+            chatRooms = chatService.getChatRooms(currentUserId)
+        }
+
         LazyColumn {
             items(chatRooms) { room ->
                 ChatRoomCard(room = room, navController = navController)
@@ -67,7 +75,15 @@ fun ChatScreen(navController: NavController) {
 @Composable
 fun ChatRoomCard(room: ChatRoom, navController: NavController) {
     // TODO: Pobrać nazwę użytkownika (np. z secondUserId) z bazy danych
-    val secondUserName = "Użytkownik ${room.secondUserId}"
+    var secondUserName : String? = ""
+    LaunchedEffect(Unit) {
+        val secondUserId = chatService.getReceiverUserId(currentUserId)
+        secondUserName = if (secondUserId != null) {
+            userService.getNameFromId(secondUserId)
+        } else {
+            "Nieznany użytkownik"
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -83,7 +99,7 @@ fun ChatRoomCard(room: ChatRoom, navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = secondUserName,
+                text = secondUserName ?: "Nieznany użytkownik",
                 style = MaterialTheme.typography.bodyLarge
             )
             Button(onClick = {

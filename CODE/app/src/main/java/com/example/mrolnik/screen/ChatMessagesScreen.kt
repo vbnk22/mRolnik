@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -13,10 +14,17 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.Chat
+import com.example.mrolnik.model.ChatRoom
+import com.example.mrolnik.service.UserService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
 
+
+val senderUserId = UserService.getLoggedUserId()
 
 @Composable
 fun ChatMessagesScreen(
@@ -24,28 +32,10 @@ fun ChatMessagesScreen(
     otherUserName: String,
     navController: NavController
 ) {
-    var messages by remember {
-        mutableStateOf(
-            listOf(
-                Chat(
-                    chatId = 1,
-                    chatRoomId = chatRoomId,
-                    senderId = 1,
-                    message = "Cześć!",
-                    timestamp = System.currentTimeMillis() - 60_000
-                ),
-                Chat(
-                    chatId = 2,
-                    chatRoomId = chatRoomId,
-                    senderId = 2,
-                    message = "Hej! Co słychać?",
-                    timestamp = System.currentTimeMillis()
-                )
-            )
-        )
-    }
+    var messages by remember {mutableStateOf(emptyList<Chat>())}
     val backIcon = painterResource(R.drawable.baseline_arrow_back)
     var newMessage by remember { mutableStateOf("") }
+
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -72,6 +62,10 @@ fun ChatMessagesScreen(
                 modifier = Modifier.align(Alignment.Center),
                 textAlign = TextAlign.Center
             )
+        }
+
+        LaunchedEffect(Unit) {
+            messages = chatService.getMessages(chatRoomId)
         }
 
         // Lista wiadomości
@@ -101,13 +95,24 @@ fun ChatMessagesScreen(
             Button(
                 onClick = {
                     if (newMessage.isNotBlank()) {
-                        messages = messages + Chat(
-                            chatId = messages.size + 1,
+//                        messages = messages + Chat(
+//                            chatId = messages.size + 1,
+//                            chatRoomId = chatRoomId,
+//                            senderId = 1,
+//                            message = newMessage,
+//                            timestamp = System.currentTimeMillis()
+//                        )
+
+                        val message = Chat(
                             chatRoomId = chatRoomId,
-                            senderId = 1,
+                            senderUserId = senderUserId,
                             message = newMessage,
                             timestamp = System.currentTimeMillis()
                         )
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            chatService.sendMessage(message)
+                        }
                         newMessage = ""
                     }
                 },
@@ -121,7 +126,7 @@ fun ChatMessagesScreen(
 
 @Composable
 fun MessageBubble(message: Chat) {
-    val isCurrentUser = message.senderId == 1 // TODO: Zastąpić aktualnym użytkownikiem
+    val isCurrentUser = message.senderUserId == senderUserId // TODO: Zastąpić aktualnym użytkownikiem
     val bubbleColor = if (isCurrentUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
     val textColor = if (isCurrentUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary
 

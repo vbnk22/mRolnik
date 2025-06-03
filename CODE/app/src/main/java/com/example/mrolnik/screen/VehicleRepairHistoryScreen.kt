@@ -142,10 +142,10 @@ fun VehicleRepairHistoryScreen(navController: NavController) {
                     val description = fieldValues["Opis"] ?: ""
                     val cost = fieldValues["Koszt"]?.toDoubleOrNull() ?: 0.0
                     val date = fieldValues["Data naprawy"] ?: ""
-                    val formatter = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")
-                    val parsedDate = java.time.LocalDate.parse(date, formatter)
-                    val repair = Repair(parsedDate.toString(), description, cost)
-                    //val repair = Repair(LocalDate.parse(date).toString(), description, cost)
+//                    val formatter = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")
+//                    val parsedDate = java.time.LocalDate.parse(date, formatter)
+//                    val repair = Repair(parsedDate.toString(), description, cost)
+                    val repair = Repair(LocalDate.parse(date).toString(), description, cost)
 
                     CoroutineScope(Dispatchers.IO).launch {
                         vehicleService.assignRepairToVehicle(repair, currentVehicle)
