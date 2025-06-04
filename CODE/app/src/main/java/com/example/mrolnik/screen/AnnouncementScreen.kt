@@ -20,6 +20,8 @@ import com.example.mrolnik.R
 import com.example.mrolnik.model.Offer
 import com.example.mrolnik.service.UserService
 import com.example.mrolnik.service.OfferService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 var offerService = OfferService()
@@ -258,13 +260,13 @@ fun OfferItem(
                 val name = userNames[offer.userId]
                 Text("Dodane przez: ${name ?: "Nieznany użytkownik"}")
 
-
-
-
                 Spacer(modifier = Modifier.height(8.dp))
                 if (loggedInUserId != offer.userId) {
                     Button(onClick = {
-                        // TODO: dodaj obsługę wiadomości
+                        // TODO: przenieść użytkownika do widoku odpowiedniego chatRoom
+                        CoroutineScope(Dispatchers.IO).launch {
+                            chatService.createChatRoom(loggedInUserId, offer.userId)
+                        }
                     }) {
                         Text("Napisz wiadomość")
                     }

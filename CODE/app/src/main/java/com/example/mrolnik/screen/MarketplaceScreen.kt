@@ -153,7 +153,10 @@ fun MarketplaceScreen(navController: NavController) {
                         expandedItemId = if (expandedItemId == item.marketplaceItemId) null else item.marketplaceItemId
                     },
                     onMessageClick = {
-                        // Nawigacja do czatu lub inne akcje
+                        // TODO: przenieść użytkownika do widoku odpowiedniego chatRoom
+                        coroutineScope.launch {
+                            chatService.createChatRoom(loggedInUserId, item.userId)
+                        }
                     },
                     onDelete = { itemToDelete ->
                         coroutineScope.launch {
