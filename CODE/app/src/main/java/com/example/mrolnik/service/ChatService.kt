@@ -26,7 +26,7 @@ class ChatService {
         }
     }
 
-    suspend fun sendMessage(chat: Chat): Boolean {
+    suspend fun sendMessage(chat: Chat): List<Chat> {
         return try {
             supabase.from("chat").insert(
                 mapOf(
@@ -36,10 +36,10 @@ class ChatService {
                     "senderUserId" to chat.senderUserId
                 )
             )
-            true
+            getMessages(chat.chatRoomId)
         } catch (e: Exception) {
             Log.e("ChatService", "Sending message error: ${e.message}")
-            false
+            emptyList<Chat>()
         }
     }
 

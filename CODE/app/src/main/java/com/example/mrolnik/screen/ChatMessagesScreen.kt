@@ -1,5 +1,6 @@
 package com.example.mrolnik.screen
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,10 +15,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
 import com.example.mrolnik.model.Chat
-import com.example.mrolnik.model.ChatRoom
 import com.example.mrolnik.service.UserService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -64,8 +65,19 @@ fun ChatMessagesScreen(
             )
         }
 
+        // Odswieżanie wiadomości co 5 sekund bo Realtime Supabase nie działą
         LaunchedEffect(Unit) {
-            messages = chatService.getMessages(chatRoomId)
+            while (true) {
+                try {
+                    val newMessages = chatService.getMessages(chatRoomId)
+                    if (newMessages != messages) {
+                        messages = newMessages
+                    }
+                } catch (e: Exception) {
+                    Log.e("ChatScreen", "Błąd ładowania wiadomości: ${e.message}")
+                }
+                delay(5000)
+            }
         }
 
         // Lista wiadomości
@@ -95,14 +107,6 @@ fun ChatMessagesScreen(
             Button(
                 onClick = {
                     if (newMessage.isNotBlank()) {
-//                        messages = messages + Chat(
-//                            chatId = messages.size + 1,
-//                            chatRoomId = chatRoomId,
-//                            senderId = 1,
-//                            message = newMessage,
-//                            timestamp = System.currentTimeMillis()
-//                        )
-
                         val message = Chat(
                             chatRoomId = chatRoomId,
                             senderUserId = senderUserId,
@@ -111,7 +115,7 @@ fun ChatMessagesScreen(
                         )
 
                         CoroutineScope(Dispatchers.IO).launch {
-                            chatService.sendMessage(message)
+                            messages = chatService.sendMessage(message)
                         }
                         newMessage = ""
                     }
@@ -126,7 +130,7 @@ fun ChatMessagesScreen(
 
 @Composable
 fun MessageBubble(message: Chat) {
-    val isCurrentUser = message.senderUserId == senderUserId // TODO: Zastąpić aktualnym użytkownikiem
+    val isCurrentUser = message.senderUserId == senderUserId
     val bubbleColor = if (isCurrentUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
     val textColor = if (isCurrentUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary
 

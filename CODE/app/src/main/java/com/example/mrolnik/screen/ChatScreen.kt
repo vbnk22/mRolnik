@@ -13,14 +13,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mrolnik.R
-import com.example.mrolnik.model.Chat
 import com.example.mrolnik.model.ChatRoom
-import com.example.mrolnik.model.Fertilizer
-import com.example.mrolnik.model.Offer
 import com.example.mrolnik.service.ChatService
 import com.example.mrolnik.service.UserService
 import com.example.mrolnik.service.userService
-import com.example.mrolnik.viewmodel.LocalSharedViewModel
 
 val chatService = ChatService()
 val currentUserId = UserService.getLoggedUserId()
@@ -74,14 +70,19 @@ fun ChatScreen(navController: NavController) {
 
 @Composable
 fun ChatRoomCard(room: ChatRoom, navController: NavController) {
-    // TODO: Pobrać nazwę użytkownika (np. z secondUserId) z bazy danych
-    var secondUserName : String? = ""
-    LaunchedEffect(Unit) {
-        val secondUserId = chatService.getReceiverUserId(currentUserId)
-        secondUserName = if (secondUserId != null) {
-            userService.getNameFromId(secondUserId)
-        } else {
-            "Nieznany użytkownik"
+    var secondUserName by remember { mutableStateOf("Ładowanie...") }
+
+    val receiverUserId = if (room.firstUserId == currentUserId) {
+        room.secondUserId
+    } else {
+        room.firstUserId
+    }
+
+    LaunchedEffect(receiverUserId) {
+        try {
+            secondUserName = userService.getNameFromId(receiverUserId) ?: "Nieznany użytkownik"
+        } catch (e: Exception) {
+            secondUserName = "Nieznany użytkownik"
         }
     }
 
@@ -99,12 +100,11 @@ fun ChatRoomCard(room: ChatRoom, navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = secondUserName ?: "Nieznany użytkownik",
+                text = secondUserName,
                 style = MaterialTheme.typography.bodyLarge
             )
             Button(onClick = {
-                // TODO: Przekazać ID pokoju czatu jako argument do ChatMessagesScreen
-                navController.navigate("chatMessages/${room.chatRoomId}/Użytkownik ${room.secondUserId}")
+                navController.navigate("chatMessages/${room.chatRoomId}/$secondUserName")
             }) {
                 Text("Wejdź")
             }
