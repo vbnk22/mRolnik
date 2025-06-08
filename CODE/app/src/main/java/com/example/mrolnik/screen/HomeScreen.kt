@@ -179,7 +179,7 @@ fun HomePage(navController: NavController) {
             text = "System Zarządzania Gospodarstwem",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
+            color = Color(0xFF2E7D32),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 24.dp),

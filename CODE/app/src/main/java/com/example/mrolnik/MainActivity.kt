@@ -25,11 +25,12 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalSharedViewModel provides sharedViewModel
             ) {
-                MRolnikTheme {
-                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        MainApp()
-                    }
-                }
+//                MRolnikTheme {
+//                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+//
+//                    }
+                    MainApp()
+
             }
         }
     }

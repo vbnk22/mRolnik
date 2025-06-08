@@ -20,10 +20,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
@@ -37,6 +39,7 @@ fun CustomModalDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -47,26 +50,70 @@ fun CustomModalDialog(
         ) {
             Card(
                 shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .wrapContentHeight(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    .wrapContentHeight()
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { /* Zapobiega zamknięciu po kliknięciu w kartę */ }
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = title, style = MaterialTheme.typography.titleLarge)
-                    Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2E7D32)
+                    )
+
                     content()  // Renderowanie dynamicznych inputów
-                    Spacer(modifier = Modifier.height(16.dp))
+
                     Row(
-                        horizontalArrangement = Arrangement.End,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        OutlinedButton(onClick = onDismiss) {
-                            Text("Anuluj")
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .height(48.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFF757575)
+                            ),
+                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                                width = 1.dp
+                            )
+                        ) {
+                            Text(
+                                text = "Anuluj",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = onConfirm) {
-                            Text("Zapisz")
+
+                        Button(
+                            onClick = onConfirm,
+                            modifier = Modifier
+                                .height(48.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF4CAF50)
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 4.dp
+                            )
+                        ) {
+                            Text(
+                                text = "Zapisz",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
                         }
                     }
                 }
@@ -74,6 +121,7 @@ fun CustomModalDialog(
         }
     }
 }
+
 @Composable
 fun InfoModalDialog(
     onDismiss: () -> Unit,
@@ -81,29 +129,66 @@ fun InfoModalDialog(
     content: @Composable () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 8.dp,
+        Box(
             modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(text = title, style = MaterialTheme.typography.titleLarge)
-
-                content()
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
                 ) {
-                    Button(onClick = onDismiss) {
-                        Text("OK")
+                    onDismiss()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .wrapContentHeight()
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { /* Zapobiega zamknięciu po kliknięciu w kartę */ }
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2E7D32)
+                    )
+
+                    content()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .height(48.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF4CAF50)
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 4.dp
+                            )
+                        ) {
+                            Text(
+                                text = "OK",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
