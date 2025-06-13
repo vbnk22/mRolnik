@@ -1,6 +1,6 @@
 # 🌾 mRolnik – Mobile App for Farm Resource Management
 
-**AgriManager** is a modern mobile application developed in **Kotlin** for helping farmers and agricultural businesses efficiently manage their resources, tasks, and field data – all from one place.
+**mRolnik** is a modern mobile application developed in **Kotlin** for helping farmers and agricultural businesses efficiently manage their resources, tasks, and field data – all from one place.
 
 ---
 
